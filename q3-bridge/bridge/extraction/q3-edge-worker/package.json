@@ -1,0 +1,29 @@
+{
+    "name": "q3-edge-worker",
+    "version": "1.0.0",
+    "description": "Serverless Q3 static site hosting via Cloudflare Workers",
+    "main": "src/index.js",
+    "type": "module",
+    "scripts": {
+        "dev": "wrangler dev",
+        "deploy": "wrangler deploy",
+        "deploy:production": "wrangler deploy --env production",
+        "tail": "wrangler tail",
+        "sync": "node scripts/sync-sites.js"
+    },
+    "keywords": [
+        "q3",
+        "quantum-storage",
+        "cloudflare-workers",
+        "static-hosting",
+        "serverless"
+    ],
+    "author": "Cr8OS",
+    "license": "MIT",
+    "devDependencies": {
+        "wrangler": "^3.0.0"
+    },
+    "dependencies": {
+        "@aws-sdk/client-s3": "^3.0.0"
+    }
+}

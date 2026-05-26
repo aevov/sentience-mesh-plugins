@@ -1,0 +1,14 @@
+# Backup files
+*.bak
+*.orig
+*~
+js-backup-pre-wasm/
+pre-wasm/
+*.tmp
+build-plugins.sh
+*.ckpt*
+*.bin
+node_modules/
+*.data-*
+*.index
+workerd

@@ -1,0 +1,22 @@
+name = "acldq-arena"
+main = "cloudflare-arena-worker.js"
+compatibility_date = "2024-01-01"
+
+# KV namespace for state persistence
+[[kv_namespaces]]
+binding = "ARENA_KV"
+id = "YOUR_KV_NAMESPACE_ID"  # Replace after: wrangler kv:namespace create ARENA_KV
+
+# Cron trigger - every minute for perpetual compute
+[triggers]
+crons = ["* * * * *"]
+
+# Environment variables
+[vars]
+VPS_ORIGIN = "https://usaxdreryerjejfdc-rep.convobuilder.com"
+CUBBIT_ENDPOINT = "https://s3.cubbit.eu"
+CUBBIT_BUCKET = "cr8os1"
+
+# Production
+[env.production]
+name = "acldq-arena-production"

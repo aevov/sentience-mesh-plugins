@@ -1,0 +1,4422 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cr8OS Alter - Quantum Control Dashboard</title>
+
+    <!-- File Explorer -->
+    <link rel="stylesheet" type="text/css" href="/file-explorer/file-explorer.css">
+    <script type="text/javascript" src="/file-explorer/file-explorer.js"></script>
+
+    <!-- Quantum Cloud Stats Integration -->
+    <script type="text/javascript" src="quantum-stats-connector.js" defer></script>
+
+
+    <style>
+        :root {
+            /* Base16 Dracula-inspired theme */
+            --base00: #0a0a0f;
+            --base01: #12121a;
+            --base02: #1a1a25;
+            --base03: #2a2a3a;
+            --base04: #4a4a5a;
+            --base05: #e0e0e8;
+            --base06: #f0f0f8;
+            --base07: #ffffff;
+            --base08: #ff5555;
+            --base09: #ffb86c;
+            --base0A: #f1fa8c;
+            --base0B: #50fa7b;
+            --base0C: #8be9fd;
+            --base0D: #6272a4;
+            --base0E: #bd93f9;
+            --base0F: #ff79c6;
+
+            /* Cr8OS Quantum accents */
+            --quantum-violet: #a855f7;
+            --quantum-cyan: #22d3ee;
+            --quantum-orange: #fb923c;
+
+            --gap: 12px;
+            --radius: 12px;
+            --shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--base00);
+            color: var(--base05);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* Header */
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 16px 24px;
+            background: linear-gradient(135deg, var(--base01) 0%, var(--base02) 100%);
+            border-bottom: 1px solid var(--base03);
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .logo-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            background: linear-gradient(135deg, var(--quantum-violet), var(--quantum-cyan));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            font-weight: bold;
+        }
+
+        .logo-text h1 {
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--base07);
+        }
+
+        .logo-text span {
+            font-size: 12px;
+            color: var(--base04);
+        }
+
+        .sync-status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            background: var(--base02);
+            border-radius: 20px;
+            font-size: 13px;
+        }
+
+        .sync-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--base0B);
+            animation: pulse 2s infinite;
+        }
+
+        .sync-dot.offline {
+            background: var(--base08);
+            animation: none;
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+
+            50% {
+                opacity: 0.5;
+                transform: scale(0.8);
+            }
+        }
+
+        /* Grid Layout */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: var(--gap);
+            padding: var(--gap);
+        }
+
+        /* Widget Base */
+        .widget {
+            background: var(--base01);
+            border-radius: var(--radius);
+            border: 1px solid var(--base03);
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .widget:hover {
+            border-color: var(--quantum-violet);
+            box-shadow: var(--shadow);
+        }
+
+        .widget-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 16px;
+            background: var(--base02);
+            border-bottom: 1px solid var(--base03);
+        }
+
+        .widget-header h3 {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--base06);
+        }
+
+        .widget-content {
+            padding: 16px;
+        }
+
+        /* Worker Status Widget */
+        .worker-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 8px;
+        }
+
+        .worker-node {
+            aspect-ratio: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: var(--base02);
+            border-radius: 8px;
+            border: 2px solid transparent;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .worker-node.active {
+            border-color: var(--base0B);
+            background: rgba(80, 250, 123, 0.1);
+        }
+
+        .worker-node.resting {
+            border-color: var(--base09);
+            background: rgba(255, 184, 108, 0.1);
+        }
+
+        .worker-node.idle {
+            border-color: var(--base04);
+        }
+
+        .worker-node .worker-id {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--base06);
+        }
+
+        .worker-node .worker-status {
+            font-size: 10px;
+            color: var(--base04);
+            margin-top: 4px;
+        }
+
+        /* Rotation Pattern Widget */
+        .rotation-display {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .rotation-phase {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 8px 12px;
+            background: var(--base02);
+            border-radius: 8px;
+        }
+
+        .rotation-phase.current {
+            background: rgba(168, 85, 247, 0.2);
+            border: 1px solid var(--quantum-violet);
+        }
+
+        .phase-number {
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--base03);
+            border-radius: 50%;
+            font-weight: 700;
+            font-size: 14px;
+        }
+
+        .phase-info {
+            flex: 1;
+        }
+
+        .phase-info .target {
+            font-size: 13px;
+            color: var(--base06);
+        }
+
+        .phase-info .interval {
+            font-size: 11px;
+            color: var(--base04);
+        }
+
+        .phase-progress {
+            width: 60px;
+            height: 6px;
+            background: var(--base03);
+            border-radius: 3px;
+            overflow: hidden;
+        }
+
+        .phase-progress-bar {
+            height: 100%;
+            background: var(--quantum-cyan);
+            transition: width 0.3s ease;
+        }
+
+        /* Metrics Widget */
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+        }
+
+        .metric-card {
+            padding: 16px;
+            background: var(--base02);
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .metric-value {
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--base07);
+        }
+
+        .metric-label {
+            font-size: 11px;
+            color: var(--base04);
+            margin-top: 4px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        /* Heartbeat Stream */
+        .heartbeat-stream {
+            height: 200px;
+            overflow-y: auto;
+        }
+
+        .heartbeat-entry {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 8px 0;
+            border-bottom: 1px solid var(--base02);
+            font-size: 12px;
+        }
+
+        .heartbeat-time {
+            color: var(--base04);
+            width: 60px;
+        }
+
+        .heartbeat-worker {
+            color: var(--quantum-cyan);
+            width: 100px;
+        }
+
+        .heartbeat-message {
+            color: var(--base05);
+            flex: 1;
+        }
+
+        /* Q3 Carrier Sync Widget */
+        .Q3 Carrier-stats {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .Q3 Carrier-stat {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 12px;
+            background: var(--base02);
+            border-radius: 6px;
+        }
+
+        .Q3 Carrier-stat-label {
+            color: var(--base04);
+            font-size: 13px;
+        }
+
+        .Q3 Carrier-stat-value {
+            color: var(--base06);
+            font-weight: 600;
+            font-size: 13px;
+        }
+
+        /* Large span widgets */
+        .widget.wide {
+            grid-column: span 2;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .widget.wide {
+                grid-column: span 1;
+            }
+        }
+
+        /* ORIKI Cognitive Status */
+        .oriki-layers {
+            display: flex;
+            gap: 8px;
+            margin-top: 12px;
+        }
+
+        .oriki-layer {
+            flex: 1;
+            height: 40px;
+            background: var(--base02);
+            border-radius: 6px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .oriki-layer .layer-num {
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--quantum-violet);
+        }
+
+        .oriki-layer .layer-label {
+            font-size: 9px;
+            color: var(--base04);
+        }
+
+        /* Footer */
+        .footer {
+            padding: 16px 24px;
+            text-align: center;
+            color: var(--base04);
+            font-size: 12px;
+            border-top: 1px solid var(--base02);
+        }
+
+        /* Storage Mode Cards */
+        .mode-option {
+            flex: 1;
+            cursor: pointer;
+        }
+
+        .mode-option input {
+            display: none;
+        }
+
+        .mode-card {
+            padding: 16px;
+            background: var(--base02);
+            border: 2px solid var(--base03);
+            border-radius: 8px;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+
+        .mode-card:hover {
+            border-color: var(--base04);
+            background: var(--base03);
+        }
+
+        .mode-card.active {
+            border-color: var(--quantum-violet);
+            background: rgba(168, 85, 247, 0.1);
+        }
+
+        /* Danger Zone (Worker Controls) */
+        .danger-zone {
+            border: 2px solid var(--base08);
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        .danger-zone .widget-header {
+            background: linear-gradient(135deg, rgba(255, 85, 85, 0.2), rgba(255, 184, 108, 0.2)) !important;
+        }
+
+        .confirm-action {
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .confirm-action:hover {
+            transform: scale(1.02);
+        }
+
+        /* Login Modal */
+        .login-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+            backdrop-filter: blur(5px);
+        }
+
+        .login-modal.hidden {
+            display: none;
+        }
+
+        .login-box {
+            background: var(--base01);
+            border: 1px solid var(--base03);
+            border-radius: 16px;
+            padding: 32px;
+            width: 360px;
+            max-width: 90vw;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+        }
+
+        .login-box h2 {
+            margin: 0 0 24px 0;
+            text-align: center;
+            color: var(--quantum-cyan);
+            font-size: 24px;
+        }
+
+        .login-box input {
+            width: 100%;
+            padding: 12px 16px;
+            margin-bottom: 16px;
+            background: var(--base02);
+            border: 1px solid var(--base03);
+            border-radius: 8px;
+            color: var(--base06);
+            font-size: 14px;
+            box-sizing: border-box;
+        }
+
+        .login-box input:focus {
+            outline: none;
+            border-color: var(--quantum-cyan);
+        }
+
+        .login-box button {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, var(--quantum-violet), var(--quantum-cyan));
+            border: none;
+            border-radius: 8px;
+            color: white;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .login-box button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(168, 85, 247, 0.4);
+        }
+
+        .login-box .error {
+            color: var(--base08);
+            font-size: 12px;
+            margin-bottom: 16px;
+            text-align: center;
+        }
+
+        .login-box .toggle-link {
+            text-align: center;
+            margin-top: 16px;
+            font-size: 13px;
+            color: var(--base04);
+        }
+
+        .login-box .toggle-link a {
+            color: var(--quantum-cyan);
+            cursor: pointer;
+        }
+
+        /* User Status in Header */
+        .user-status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 12px;
+            background: var(--base02);
+            border-radius: 20px;
+            font-size: 12px;
+        }
+
+        .user-status .avatar {
+            width: 24px;
+            height: 24px;
+            background: var(--quantum-violet);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 11px;
+        }
+
+        .user-status .logout-btn {
+            background: var(--base03);
+            border: none;
+            color: var(--base05);
+            padding: 4px 8px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 11px;
+        }
+
+        .user-status .logout-btn:hover {
+            background: var(--base08);
+            color: white;
+        }
+
+        /* Draggable & Resizable */
+        .dashboard-grid {
+            position: relative;
+            /* Context for absolute positioning if needed */
+        }
+
+        .widget.draggable {
+            position: relative;
+            /* Default relative, absolute when drag enabled */
+            z-index: 10;
+        }
+
+        .widget.dragging {
+            opacity: 0.8;
+            box-shadow: 0 8px 32px rgba(168, 85, 247, 0.4);
+            z-index: 1000;
+            cursor: grabbing;
+        }
+
+        .widget-header {
+            cursor: grab;
+            /* Handle for dragging */
+        }
+
+        .widget.dragging .widget-header {
+            cursor: grabbing;
+        }
+
+        .resize-handle {
+            position: absolute;
+            bottom: 0;
+            right: 0;
+            width: 16px;
+            height: 16px;
+            cursor: se-resize;
+            background: linear-gradient(135deg, transparent 50%, var(--base04) 50%);
+            border-bottom-right-radius: var(--radius);
+            opacity: 0.5;
+            transition: opacity 0.2s;
+        }
+
+        .widget:hover .resize-handle {
+            opacity: 1;
+            background: linear-gradient(135deg, transparent 50%, var(--quantum-violet) 50%);
+        }
+
+        /* Sleeper Visualizer Canvas */
+        #sleeperVisualizer {
+            width: 100%;
+            height: 200px;
+            background: var(--base01);
+            border-radius: 8px;
+            margin-top: 12px;
+            border: 1px solid var(--base03);
+            box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.5);
+        }
+
+        /* Status Pills */
+        .status-pill {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+
+        .status-pill.dormant {
+            background: var(--base03);
+            color: var(--base05);
+        }
+
+        .status-pill.active {
+            background: var(--quantum-violet);
+            color: white;
+            box-shadow: 0 0 10px rgba(168, 85, 247, 0.5);
+            animation: pulse-glow 2s infinite;
+        }
+
+        @keyframes pulse-glow {
+            0% {
+                box-shadow: 0 0 10px rgba(168, 85, 247, 0.5);
+            }
+
+            50% {
+                box-shadow: 0 0 20px rgba(168, 85, 247, 0.8);
+            }
+
+            100% {
+                box-shadow: 0 0 10px rgba(168, 85, 247, 0.5);
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <header class="header">
+        <div class="logo">
+            <div class="logo-icon">⚛</div>
+            <div class="logo-text">
+                <h1>Cr8OS Alter</h1>
+                <span>Quantum Monitoring Dashboard</span>
+            </div>
+        </div>
+        <div style="display: flex; align-items: center; gap: 16px;">
+            <!-- Widget Layout Toggle: Bento (default) / Custom -->
+            <button id="reorderToggle" onclick="toggleReorderMode()"
+                style="background: var(--base02); border: 1px solid var(--base03); color: var(--base05); padding: 8px 12px; border-radius: 6px; cursor: pointer; font-size: 12px; display: flex; align-items: center; gap: 6px; transition: all 0.3s;"
+                title="Toggle between Bento grid and Custom layout">
+                <span id="reorderIcon">🧱</span>
+                <span id="reorderText">Bento</span>
+            </button>
+            <div class="sync-status">
+                <div class="sync-dot" id="syncDot"></div>
+                <span id="syncText">Syncing with Q3 Carrier...</span>
+            </div>
+            <!-- User Status -->
+            <div class="user-status" id="userStatus" style="display: none;">
+                <div class="avatar" id="userAvatar">?</div>
+                <span id="userName">Guest</span>
+                <button class="logout-btn" onclick="logout()">Logout</button>
+            </div>
+            <button id="loginBtn" onclick="showLoginModal()"
+                style="background: var(--quantum-violet); border: none; color: white; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 12px;">
+                Login
+            </button>
+        </div>
+    </header>
+
+    <!-- Login Modal -->
+    <div class="login-modal hidden" id="loginModal">
+        <div class="login-box">
+            <h2 id="authTitle">🔐 Login</h2>
+            <div class="error" id="authError" style="display: none;"></div>
+            <input type="text" id="authUsername" placeholder="Username" autocomplete="username">
+            <input type="password" id="authPassword" placeholder="Password" autocomplete="current-password">
+            <input type="password" id="authPasswordConfirm" placeholder="Confirm Password" autocomplete="new-password"
+                style="display: none;">
+            <button id="authSubmit" onclick="submitAuth()">Login</button>
+            <div class="toggle-link">
+                <span id="authToggleText">Don't have an account?</span>
+                <a id="authToggleLink" onclick="toggleAuthMode()">Register</a>
+            </div>
+            <div style="text-align: center; margin-top: 12px;">
+                <a style="color: var(--base04); font-size: 11px; cursor: pointer;" onclick="hideLoginModal()">Continue
+                    as Guest</a>
+            </div>
+        </div>
+    </div>
+
+    <main class="dashboard-grid">
+        <!-- Storage Workflow Mode Selector (TOP) -->
+        <div class="widget wide" id="storageModePanel">
+            <div class="widget-header"
+                style="background: linear-gradient(135deg, rgba(168,85,247,0.2), rgba(34,211,238,0.2));">
+                <h3>⚙️ Workflow Storage Mode</h3>
+                <span id="storageModeLabel">Hybrid</span>
+            </div>
+            <div class="widget-content">
+                <div style="display: flex; gap: 16px; align-items: stretch;">
+                    <!-- Mode Selection -->
+                    <div style="flex: 2;">
+                        <div style="display: flex; gap: 12px; margin-bottom: 16px;">
+                            <label class="mode-option" onclick="setStorageMode('quic')">
+                                <input type="radio" name="storageMode" value="quic" id="modeQuic">
+                                <div class="mode-card" id="modeCardQuic">
+                                    <div style="font-size: 20px;">🌐</div>
+                                    <div style="font-weight: 600; margin: 6px 0;">QUIC.cloud Only</div>
+                                    <div style="font-size: 11px; color: var(--base04);">Offload entirely to LiteSpeed
+                                    </div>
+                                </div>
+                            </label>
+                            <label class="mode-option" onclick="setStorageMode('hybrid')">
+                                <input type="radio" name="storageMode" value="hybrid" id="modeHybrid" checked>
+                                <div class="mode-card active" id="modeCardHybrid">
+                                    <div style="font-size: 20px;">🔄</div>
+                                    <div style="font-weight: 600; margin: 6px 0;">Hybrid (Default)</div>
+                                    <div style="font-size: 11px; color: var(--base04);">70% QUIC, 30% Q3 Carrier</div>
+                                </div>
+                            </label>
+                            <label class="mode-option" onclick="setStorageMode('Q3 Carrier')">
+                                <input type="radio" name="storageMode" value="Q3 Carrier" id="modeQ3 Carrier">
+                                <div class="mode-card" id="modeCardQ3 Carrier">
+                                    <div style="font-size: 20px;">☁️</div>
+                                    <div style="font-weight: 600; margin: 6px 0;">Q3 Carrier Only</div>
+                                    <div style="font-size: 11px; color: var(--base04);">All via Q3 Carrier S3</div>
+                                </div>
+                            </label>
+                        </div>
+                        <div id="storageModeDescription"
+                            style="font-size: 12px; color: var(--base05); padding: 10px; background: var(--base02); border-radius: 6px;">
+                            Split between QUIC.cloud (70%) and Q3 Carrier (30%)
+                        </div>
+                    </div>
+                    <!-- Quick Stats -->
+                    <div style="flex: 1; background: var(--base02); border-radius: 8px; padding: 16px;">
+                        <div style="font-size: 12px; color: var(--base04); margin-bottom: 12px;">ACTIVE CONNECTIONS
+                        </div>
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                            <span>QUIC Domains:</span>
+                            <span id="activeQuicDomains" style="color: var(--quantum-cyan);">0</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                            <span>Q3 Carrier:</span>
+                            <span id="Q3 CarrierConnectionStatus" style="color: var(--base0B);">✓</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between;">
+                            <span>Engine Files:</span>
+                            <span id="engineFilesStatus" style="color: var(--base04);">Checking...</span>
+                        </div>
+                    </div>
+                </div>
+                <!-- ACLDQ-AVIF Cache Status -->
+                <div
+                    style="margin-top: 16px; padding: 12px; background: var(--base02); border-radius: 8px; border: 1px solid var(--quantum-violet);">
+                    <div
+                        style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <span style="font-size: 16px;">🗜️</span>
+                            <span style="font-weight: 600; color: var(--base06);">ACLDQ-AVIF Cache</span>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 6px;">
+                            <div id="acldqCacheDot"
+                                style="width: 8px; height: 8px; border-radius: 50%; background: var(--base04);"></div>
+                            <span id="acldqCacheStatus"
+                                style="font-size: 11px; color: var(--base04);">Initializing...</span>
+                        </div>
+                    </div>
+                    <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 8px;">
+                        <div style="text-align: center; padding: 8px; background: var(--base01); border-radius: 6px;">
+                            <div id="acldqCachedCheckpoints"
+                                style="font-size: 16px; font-weight: 700; color: var(--quantum-cyan);">0</div>
+                            <div style="font-size: 9px; color: var(--base04);">Checkpoints</div>
+                        </div>
+                        <div style="text-align: center; padding: 8px; background: var(--base01); border-radius: 6px;">
+                            <div id="acldqWorkUnits"
+                                style="font-size: 16px; font-weight: 700; color: var(--quantum-violet);">0</div>
+                            <div style="font-size: 9px; color: var(--base04);">Work Units</div>
+                        </div>
+                        <div style="text-align: center; padding: 8px; background: var(--base01); border-radius: 6px;">
+                            <div id="acldqCompressionRatio"
+                                style="font-size: 16px; font-weight: 700; color: var(--base0B);">--</div>
+                            <div style="font-size: 9px; color: var(--base04);">Compression</div>
+                        </div>
+                        <div style="text-align: center; padding: 8px; background: var(--base01); border-radius: 6px;">
+                            <div id="acldqCacheSize" style="font-size: 16px; font-weight: 700; color: var(--base09);">0
+                                KB</div>
+                            <div style="font-size: 9px; color: var(--base04);">Cache Size</div>
+                        </div>
+                    </div>
+                    <div style="font-size: 10px; color: var(--base04);">
+                        <span style="color: var(--quantum-violet);">AVIF Lossless</span> • 50% better compression than
+                        WebP •
+                        <span id="acldqModeSync" style="color: var(--quantum-cyan);">Synced with Hybrid mode</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ═══════════════════════════════════════════════════════════════════ -->
+        <!-- BITCOIN MINING WIDGET - Perpetual Cloud Mining Control -->
+        <!-- Powered by Q3 Carrier Cloud - NO Oracle Dependency -->
+        <!-- ═══════════════════════════════════════════════════════════════════ -->
+        <div class="widget wide" id="miningPanel" style="border: 2px solid var(--quantum-orange);">
+            <div class="widget-header"
+                style="background: linear-gradient(135deg, rgba(251,146,60,0.3), rgba(245,158,11,0.2));">
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <span style="font-size: 24px;">⛏️</span>
+                    <div>
+                        <h3 style="margin: 0;">Bitcoin Mining - Quantum Supercomputer</h3>
+                        <span style="font-size: 11px; color: var(--base0B);" id="miningStatusLabel">● Running
+                            Perpetually</span>
+                    </div>
+                    <!-- Perpetual Mining Indicator -->
+                    <div id="perpetualIndicator"
+                        style="display: flex; align-items: center; gap: 6px; padding: 4px 10px; background: rgba(80,250,123,0.2); border-radius: 12px; border: 1px solid var(--base0B);">
+                        <div class="perpetual-pulse"
+                            style="width: 8px; height: 8px; border-radius: 50%; background: var(--base0B); animation: perpetualPulse 1.5s ease-in-out infinite;">
+                        </div>
+                        <span style="font-size: 10px; font-weight: 600; color: var(--base0B);">PERPETUAL</span>
+                    </div>
+                </div>
+                <div style="display: flex; gap: 8px; align-items: center;">
+                    <span id="miningPlatform"
+                        style="font-size: 11px; color: var(--quantum-cyan); padding: 2px 8px; background: rgba(34,211,238,0.1); border-radius: 8px;">☁️
+                        Q3 Carrier Cloud</span>
+                    <span id="miningUptime" style="font-size: 12px; color: var(--base04);">Uptime: --</span>
+                </div>
+            </div>
+            <div class="widget-content">
+                <!-- Stats Grid -->
+                <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 20px;">
+                    <div style="background: var(--base02); padding: 16px; border-radius: 12px; text-align: center;">
+                        <div style="font-size: 11px; color: var(--base04); margin-bottom: 4px;">HASHRATE</div>
+                        <div id="miningHashrate" style="font-size: 24px; font-weight: 700; color: var(--quantum-cyan);">
+                            -- TH/s</div>
+                        <div id="miningWorkers" style="font-size: 11px; color: var(--base04);">0 workers</div>
+                    </div>
+                    <div style="background: var(--base02); padding: 16px; border-radius: 12px; text-align: center;">
+                        <div style="font-size: 11px; color: var(--base04); margin-bottom: 4px;">SHARES</div>
+                        <div style="display: flex; justify-content: center; gap: 8px; align-items: baseline;">
+                            <span id="miningSharesAccepted"
+                                style="font-size: 24px; font-weight: 700; color: var(--base0B);">0</span>
+                            <span style="font-size: 12px; color: var(--base04);">/</span>
+                            <span id="miningSharesRejected" style="font-size: 14px; color: var(--base08);">0</span>
+                        </div>
+                        <div style="font-size: 11px; color: var(--base04);">accepted / rejected</div>
+                    </div>
+                    <div style="background: var(--base02); padding: 16px; border-radius: 12px; text-align: center;">
+                        <div style="font-size: 11px; color: var(--base04); margin-bottom: 4px;">EARNED (BTC)</div>
+                        <div id="miningBTC" style="font-size: 24px; font-weight: 700; color: var(--base09);">0.00000000
+                        </div>
+                        <div id="miningUSD" style="font-size: 11px; color: var(--base0B);">≈ $0.00</div>
+                    </div>
+                    <div style="background: var(--base02); padding: 16px; border-radius: 12px; text-align: center;">
+                        <div style="font-size: 11px; color: var(--base04); margin-bottom: 4px;">EST. DAILY</div>
+                        <div id="miningDailyBTC"
+                            style="font-size: 24px; font-weight: 700; color: var(--quantum-violet);">--</div>
+                        <div id="miningDailyUSD" style="font-size: 11px; color: var(--base04);">≈ $--</div>
+                    </div>
+                </div>
+                <!-- Controls Row -->
+                <div style="display: flex; gap: 16px; align-items: center; flex-wrap: wrap;">
+                    <div style="flex: 1; min-width: 200px;">
+                        <label
+                            style="font-size: 12px; color: var(--base04); display: block; margin-bottom: 6px;">Workers:
+                            <span id="workerSliderValue">210</span></label>
+                        <div style="display: flex; gap: 8px; align-items: center;">
+                            <input type="range" id="workerSlider" min="100" max="100000000" value="210" step="100"
+                                style="flex: 1; accent-color: var(--quantum-orange);"
+                                oninput="updateWorkerSliderLabel()">
+                            <button onclick="scaleMiningWorkers()"
+                                style="padding: 8px 16px; background: var(--quantum-orange); border: none; border-radius: 6px; color: white; cursor: pointer; font-weight: 600;">Scale</button>
+                        </div>
+                    </div>
+                    <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                        <button onclick="scaleMiningWorkers(1000)"
+                            style="padding: 6px 12px; background: var(--base03); border: 1px solid var(--base04); border-radius: 6px; color: var(--base05); cursor: pointer;">1K</button>
+                        <button onclick="scaleMiningWorkers(100000)"
+                            style="padding: 6px 12px; background: var(--base03); border: 1px solid var(--base04); border-radius: 6px; color: var(--base05); cursor: pointer;">100K</button>
+                        <button onclick="scaleMiningWorkers(1000000)"
+                            style="padding: 6px 12px; background: var(--base03); border: 1px solid var(--quantum-violet); border-radius: 6px; color: var(--quantum-violet); cursor: pointer; font-weight: 600;">1M</button>
+                        <button onclick="scaleMiningWorkers(10000000)"
+                            style="padding: 6px 12px; background: var(--base03); border: 1px solid var(--quantum-cyan); border-radius: 6px; color: var(--quantum-cyan); cursor: pointer; font-weight: 600;">10M</button>
+                        <button onclick="scaleMiningWorkers(100000000)"
+                            style="padding: 6px 12px; background: linear-gradient(135deg, var(--quantum-violet), var(--quantum-cyan)); border: none; border-radius: 6px; color: white; cursor: pointer; font-weight: 700;">100M
+                            ⚡</button>
+                    </div>
+                    <div style="min-width: 180px;">
+                        <label
+                            style="font-size: 12px; color: var(--base04); display: block; margin-bottom: 6px;">Pool</label>
+                        <select id="poolSelector" onchange="changeMiningPool()"
+                            style="width: 100%; padding: 8px; background: var(--base02); border: 1px solid var(--base03); border-radius: 6px; color: var(--base05);">
+                            <option value="solo.ckpool.org:3333">Solo CKPool</option>
+                            <option value="stratum.braiins.com:3333">Braiins Pool</option>
+                            <option value="btc.f2pool.com:3333">F2Pool</option>
+                        </select>
+                    </div>
+                </div>
+                <div
+                    style="margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--base03); font-size: 12px; color: var(--base04);">
+                    Last Share: <span id="miningLastShare">--</span> | Pool: <span id="miningPool">--</span> | Total
+                    Hashes: <span id="miningTotalHashes">--</span>
+                </div>
+                <!-- Cloud Worker Status -->
+                <div id="cloudWorkerStatus"
+                    style="margin-top: 12px; padding: 12px; background: var(--base02); border-radius: 8px;">
+                    <div style="font-size: 11px; color: var(--base04); margin-bottom: 8px; font-weight: 600;">CLOUD
+                        WORKERS (Q3 Carrier)</div>
+                    <div style="display: flex; gap: 16px; flex-wrap: wrap;">
+                        <div style="display: flex; align-items: center; gap: 6px;">
+                            <div id="primaryWorkerDot"
+                                style="width: 8px; height: 8px; border-radius: 50%; background: var(--base04);"></div>
+                            <span style="font-size: 11px;">cr8stream-apl3-Q3 Carrier</span>
+                            <span id="primaryWorkerStatus"
+                                style="font-size: 10px; color: var(--base04);">(initializing)</span>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 6px;">
+                            <div id="fallbackWorkerDot"
+                                style="width: 8px; height: 8px; border-radius: 50%; background: var(--base04);"></div>
+                            <span style="font-size: 11px;">cr8stream-apl3-fallback</span>
+                            <span id="fallbackWorkerStatus"
+                                style="font-size: 10px; color: var(--base04);">(standby)</span>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 6px;">
+                            <div id="edgeWorkerDot"
+                                style="width: 8px; height: 8px; border-radius: 50%; background: var(--base04);"></div>
+                            <span style="font-size: 11px;">Q3 Carrier-edge</span>
+                            <span id="edgeWorkerStatus"
+                                style="font-size: 10px; color: var(--base04);">(initializing)</span>
+                        </div>
+                    </div>
+                    <div style="margin-top: 8px; font-size: 10px; color: var(--base04);">
+                        <span style="color: var(--quantum-violet);">APL 3.0 Qudit</span> • +35% efficiency • NO Oracle
+                        Dependency
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <style>
+            @keyframes perpetualPulse {
+
+                0%,
+                100% {
+                    opacity: 1;
+                    transform: scale(1);
+                    box-shadow: 0 0 0 0 rgba(80, 250, 123, 0.7);
+                }
+
+                50% {
+                    opacity: 0.8;
+                    transform: scale(1.2);
+                    box-shadow: 0 0 10px 3px rgba(80, 250, 123, 0.4);
+                }
+            }
+        </style>
+
+        <!-- Engine Reference (Q3 Carrier Files) -->
+        <div class="widget wide" id="engineReferencePanel">
+            <div class="widget-header"
+                style="background: linear-gradient(135deg, rgba(80,250,123,0.2), rgba(139,233,253,0.2)); cursor: pointer;"
+                onclick="toggleEngineReference()">
+                <h3>🔧 Engine Reference</h3>
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <span id="enginePath"
+                        style="font-size: 11px; color: var(--base04);">wibackups/q/cr8OS-complete-quantum</span>
+                    <span id="engineToggle" style="font-size: 16px;">▼</span>
+                </div>
+            </div>
+            <div id="engineReferenceContent" class="widget-content" style="display: block;">
+                <!-- Deployment Status -->
+                <div id="deploymentStatus"
+                    style="padding: 12px; background: var(--base02); border-radius: 8px; margin-bottom: 16px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <span style="font-weight: 600;">Deployment Readiness:</span>
+                        <span id="deploymentReadiness" style="color: var(--base04);">Checking...</span>
+                    </div>
+                    <div id="componentChecklist" style="margin-top: 12px; font-size: 12px;"></div>
+                </div>
+                <!-- Key Directories -->
+                <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px;">
+                    <button onclick="browseEngineDir('')"
+                        style="background: var(--quantum-violet); color: white; border: none; padding: 6px 12px; border-radius: 6px; font-size: 11px; cursor: pointer;">
+                        📂 Root
+                    </button>
+                    <button onclick="browseEngineDir('cr8OS-2.0/orisha')"
+                        style="background: var(--base03); color: var(--base06); border: none; padding: 6px 12px; border-radius: 6px; font-size: 11px; cursor: pointer;">
+                        🦀 Orisha
+                    </button>
+                    <button onclick="browseEngineDir('cr8OS-2.0/quantum-supercomputer')"
+                        style="background: var(--base03); color: var(--base06); border: none; padding: 6px 12px; border-radius: 6px; font-size: 11px; cursor: pointer;">
+                        ⚛️ Quantum
+                    </button>
+                    <button onclick="browseEngineDir('extraction engine')"
+                        style="background: var(--base03); color: var(--base06); border: none; padding: 6px 12px; border-radius: 6px; font-size: 11px; cursor: pointer;">
+                        🔧 Extraction
+                    </button>
+                    <button onclick="browseEngineDir('quantumcloud')"
+                        style="background: var(--base03); color: var(--base06); border: none; padding: 6px 12px; border-radius: 6px; font-size: 11px; cursor: pointer;">
+                        ☁️ Cloud
+                    </button>
+                </div>
+                <!-- Engine File Browser -->
+                <div id="engineFileBrowser"
+                    style="max-height: 200px; overflow-y: auto; background: var(--base01); border-radius: 6px; padding: 8px;">
+                    <div style="color: var(--base04); text-align: center; padding: 20px;">Click a directory to browse
+                        engine files</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Config & Versioning Panel -->
+        <div class="widget wide" id="configPanel">
+            <div class="widget-header"
+                style="background: linear-gradient(135deg, rgba(255,184,108,0.2), rgba(168,85,247,0.2));">
+                <h3>⚙️ System Configuration</h3>
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <span id="configVersion" style="font-size: 11px; color: var(--base04);">v1</span>
+                    <span id="configSyncStatus" style="color: var(--base0B);">✓ Synced</span>
+                </div>
+            </div>
+            <div class="widget-content">
+                <div style="display: flex; gap: 16px; flex-wrap: wrap;">
+                    <!-- Current Config -->
+                    <div style="flex: 2; min-width: 300px;">
+                        <div style="font-size: 12px; color: var(--base04); margin-bottom: 8px;">ACTIVE CONFIGURATION
+                        </div>
+                        <div style="background: var(--base02); border-radius: 8px; padding: 12px; font-size: 13px;">
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+                                <span>Storage Mode:</span>
+                                <span id="configStorageMode" style="color: var(--quantum-cyan);">Hybrid</span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+                                <span>QUIC Domains:</span>
+                                <span id="configDomainCount" style="color: var(--base0B);">0</span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+                                <span>Max Workers:</span>
+                                <span id="configMaxWorkers">100</span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between;">
+                                <span>Last Updated:</span>
+                                <span id="configUpdatedAt" style="color: var(--base04);">--</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Version History -->
+                    <div style="flex: 1; min-width: 200px;">
+                        <div style="font-size: 12px; color: var(--base04); margin-bottom: 8px;">VERSION HISTORY</div>
+                        <select id="configVersionSelect" onchange="previewConfigVersion()"
+                            style="width: 100%; padding: 8px; background: var(--base02); color: var(--base06); border: 1px solid var(--base03); border-radius: 6px; margin-bottom: 8px;">
+                            <option value="">Loading...</option>
+                        </select>
+                        <button onclick="rollbackConfig()"
+                            style="width: 100%; padding: 8px; background: var(--base03); color: var(--base06); border: none; border-radius: 6px; cursor: pointer; font-size: 12px;">
+                            🔄 Rollback to Selected
+                        </button>
+                    </div>
+
+                    <!-- Changelog -->
+                    <div style="flex: 2; min-width: 300px;">
+                        <div style="font-size: 12px; color: var(--base04); margin-bottom: 8px;">RECENT CHANGES</div>
+                        <div id="configChangelog"
+                            style="max-height: 100px; overflow-y: auto; background: var(--base02); border-radius: 8px; padding: 8px; font-size: 11px;">
+                            <div style="color: var(--base04); text-align: center;">Loading changelog...</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Worker Status (Now showing visualization only, controls moved down) -->
+        <div class="widget wide">
+            <div class="widget-header">
+                <h3>🔄 ACLDQA Worker Mesh</h3>
+                <span id="workerCount">0/10 Active</span>
+            </div>
+            <div class="widget-content">
+                <div class="worker-grid" id="workerGrid">
+                    <!-- Workers 0-9 will be rendered here -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Rotation Pattern -->
+        <div class="widget">
+            <div class="widget-header">
+                <h3>🔁 Rotation Pattern</h3>
+            </div>
+            <div class="widget-content">
+                <div class="rotation-display" id="rotationDisplay">
+                    <!-- Phases will be rendered here -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Key Metrics -->
+        <div class="widget">
+            <div class="widget-header">
+                <h3>📊 Key Metrics</h3>
+            </div>
+            <div class="widget-content">
+                <div class="metrics-grid">
+                    <div class="metric-card">
+                        <div class="metric-value" id="totalCalls">0</div>
+                        <div class="metric-label">Total Calls</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-value" id="avgLatency">0ms</div>
+                        <div class="metric-label">Avg Latency</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-value" id="errorRate">0%</div>
+                        <div class="metric-label">Error Rate</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-value" id="uptime">100%</div>
+                        <div class="metric-label">Uptime</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ORIKI Status -->
+        <div class="widget">
+            <div class="widget-header">
+                <h3>🧠 ORIKI Cognitive Status</h3>
+            </div>
+            <div class="widget-content">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <span>Amplification Factor:</span>
+                    <strong style="color: var(--quantum-violet);">256x</strong>
+                </div>
+                <div class="oriki-layers">
+                    <div class="oriki-layer">
+                        <span class="layer-num">L1</span>
+                        <span class="layer-label">Response</span>
+                    </div>
+                    <div class="oriki-layer">
+                        <span class="layer-num">L2</span>
+                        <span class="layer-label">Error</span>
+                    </div>
+                    <div class="oriki-layer">
+                        <span class="layer-num">L3</span>
+                        <span class="layer-label">Pressure</span>
+                    </div>
+                    <div class="oriki-layer">
+                        <span class="layer-num">L4</span>
+                        <span class="layer-label">Trend</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Heartbeat Stream -->
+        <div class="widget">
+            <div class="widget-header">
+                <h3>💓 Heartbeat Stream</h3>
+            </div>
+            <div class="widget-content">
+                <div class="heartbeat-stream" id="heartbeatStream">
+                    <!-- Heartbeats will appear here -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Q3 Carrier Sync Status -->
+        <div class="widget">
+            <div class="widget-header">
+                <h3>☁️ Q3 Carrier Sync</h3>
+            </div>
+            <div class="widget-content">
+                <div class="Q3 Carrier-stats">
+                    <div class="Q3 Carrier-stat">
+                        <span class="Q3 Carrier-stat-label">Last Sync</span>
+                        <span class="Q3 Carrier-stat-value" id="lastSync">Never</span>
+                    </div>
+                    <div class="Q3 Carrier-stat">
+                        <span class="Q3 Carrier-stat-label">Objects Tracked</span>
+                        <span class="Q3 Carrier-stat-value" id="objectsTracked">0</span>
+                    </div>
+                    <div class="Q3 Carrier-stat">
+                        <span class="Q3 Carrier-stat-label">Bandwidth Used</span>
+                        <span class="Q3 Carrier-stat-value" id="bandwidthUsed">0 KB</span>
+                    </div>
+                    <div class="Q3 Carrier-stat">
+                        <span class="Q3 Carrier-stat-label">Storage Used</span>
+                        <span class="Q3 Carrier-stat-value" id="storageUsed">0 KB</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- DANGER ZONE: Sleeper Compute Controls (Moved to bottom) -->
+        <div style="margin-top: 40px; padding-top: 20px; border-top: 3px dashed var(--base03);">
+            <div style="text-align: center; margin-bottom: 16px;">
+                <span
+                    style="background: var(--base08); color: white; padding: 6px 16px; border-radius: 20px; font-size: 12px; font-weight: 600;">
+                    ⚠️ DANGER ZONE - Worker Mesh Controls
+                </span>
+            </div>
+        </div>
+
+        <!-- Sleeper Compute Control Panel (Danger Zone) -->
+        <div class="widget wide danger-zone" id="sleeperPanel">
+            <div class="widget-header"
+                style="background: linear-gradient(135deg, rgba(255,85,85,0.2), rgba(255,184,108,0.2));">
+                <h3>⚡ Sleeper Compute Control</h3>
+                <span id="sleeperStatus" style="color: var(--base08);">Disabled</span>
+            </div>
+            <div class="widget-content">
+                <!-- Sleeper Visualizer -->
+                <canvas id="sleeperVisualizer" width="600" height="200"></canvas>
+                <div style="display:flex; justify-content:space-between; margin-bottom:12px; margin-top:4px;">
+                    <span class="status-pill dormant" id="visStatus">Dormant</span>
+                    <span style="font-size:10px; color:var(--base04)">Real-time Worker Mesh Visualization</span>
+                </div>
+                <div
+                    style="background: rgba(255,85,85,0.1); padding: 12px; border-radius: 6px; margin-bottom: 16px; font-size: 12px; color: var(--base09);">
+                    ⚠️ <strong>Warning:</strong> Enabling worker mesh will spawn background workers. All actions require
+                    confirmation.
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                    <!-- Enable/Disable Toggle -->
+                    <div style="background: var(--base02); padding: 16px; border-radius: 8px;">
+                        <div
+                            style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                            <span>Sleeper Compute</span>
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="sleeperToggle" onchange="toggleSleeper()">
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                        <div style="font-size: 11px; color: var(--base04);">
+                            ORIKI Deep: <strong style="color: var(--quantum-violet);">5120x</strong> amplification
+                        </div>
+                    </div>
+
+                    <!-- Worker Count -->
+                    <div style="background: var(--base02); padding: 16px; border-radius: 8px;">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                            <span>Target Workers</span>
+                            <span id="workerTarget" style="color: var(--quantum-cyan); font-weight: 700;">1,000</span>
+                        </div>
+                        <input type="range" id="workerSlider" min="100" max="1000000" value="1000" step="100"
+                            oninput="updateWorkerTarget()" style="width: 100%;">
+                        <div
+                            style="display: flex; justify-content: space-between; font-size: 10px; color: var(--base04); margin-top: 4px;">
+                            <span>100</span>
+                            <span>1M</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ACLDQ Generation -->
+                <div style="background: var(--base02); padding: 16px; border-radius: 8px; margin-top: 16px;">
+                    <h4 style="font-size: 13px; margin-bottom: 12px; color: var(--base06);">Generate ACLDQs On-Demand
+                    </h4>
+                    <div style="display: flex; gap: 12px; align-items: center;">
+                        <input type="number" id="acldqCount" value="1000" min="1" max="1000000"
+                            style="flex: 1; background: var(--base03); border: 1px solid var(--base04); border-radius: 6px; padding: 8px 12px; color: var(--base06); font-size: 14px;">
+                        <button onclick="generateAcldqs()" id="generateBtn"
+                            style="background: linear-gradient(135deg, var(--quantum-violet), var(--quantum-cyan)); border: none; padding: 10px 20px; border-radius: 6px; color: white; font-weight: 600; cursor: pointer; transition: all 0.3s ease;">
+                            🚀 Generate
+                        </button>
+                    </div>
+                    <div id="generateProgress" style="margin-top: 12px; display: none;">
+                        <div style="height: 6px; background: var(--base03); border-radius: 3px; overflow: hidden;">
+                            <div id="progressBar"
+                                style="height: 100%; background: var(--quantum-cyan); width: 0%; transition: width 0.5s ease;">
+                            </div>
+                        </div>
+                        <div id="progressText" style="font-size: 11px; color: var(--base04); margin-top: 4px;">
+                            Generating...</div>
+                    </div>
+                </div>
+
+                <!-- Stats Row -->
+                <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-top: 16px;">
+                    <div style="text-align: center; padding: 12px; background: var(--base02); border-radius: 8px;">
+                        <div id="activePoolsCount" style="font-size: 24px; font-weight: 700; color: var(--base07);">0
+                        </div>
+                        <div style="font-size: 10px; color: var(--base04); text-transform: uppercase;">Active Pools
+                        </div>
+                    </div>
+                    <div style="text-align: center; padding: 12px; background: var(--base02); border-radius: 8px;">
+                        <div id="totalSpawned" style="font-size: 24px; font-weight: 700; color: var(--base07);">0</div>
+                        <div style="font-size: 10px; color: var(--base04); text-transform: uppercase;">Workers Spawned
+                        </div>
+                    </div>
+                    <div style="text-align: center; padding: 12px; background: var(--base02); border-radius: 8px;">
+                        <div id="acldqsGenerated" style="font-size: 24px; font-weight: 700; color: var(--base07);">0
+                        </div>
+                        <div style="font-size: 10px; color: var(--base04); text-transform: uppercase;">ACLDQs Generated
+                        </div>
+                    </div>
+                    <div style="text-align: center; padding: 12px; background: var(--base02); border-radius: 8px;">
+                        <div id="peakWorkers" style="font-size: 24px; font-weight: 700; color: var(--base07);">0</div>
+                        <div style="font-size: 10px; color: var(--base04); text-transform: uppercase;">Peak Concurrent
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- QUIC.cloud Domain Management -->
+        <div class="widget wide" id="domainPanel">
+            <div class="widget-header"
+                style="background: linear-gradient(135deg, rgba(34,211,238,0.2), rgba(251,146,60,0.2));">
+                <h3>🌐 QUIC.cloud Domain Management</h3>
+                <span id="domainCount">0 domains</span>
+            </div>
+            <div class="widget-content">
+                <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 16px;">
+                    <!-- Domain List -->
+                    <div>
+                        <h4 style="font-size: 13px; margin-bottom: 12px; color: var(--base06);">Configured Domains</h4>
+                        <div id="domainList" style="max-height: 200px; overflow-y: auto;">
+                            <!-- Domains will be rendered here -->
+                            <div
+                                style="padding: 12px; background: var(--base02); border-radius: 6px; color: var(--base04); text-align: center;">
+                                No domains configured
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Add Domain Form -->
+                    <div style="background: var(--base02); padding: 16px; border-radius: 8px;">
+                        <h4 style="font-size: 13px; margin-bottom: 12px; color: var(--base06);">Add Domain</h4>
+                        <div style="display: flex; flex-direction: column; gap: 8px;">
+                            <input type="text" id="newDomainName" placeholder="Domain name (e.g., backup-1)"
+                                style="background: var(--base03); border: 1px solid var(--base04); border-radius: 6px; padding: 8px; color: var(--base06); font-size: 12px;">
+                            <input type="text" id="newDomainKey" placeholder="Domain key *"
+                                style="background: var(--base03); border: 1px solid var(--base04); border-radius: 6px; padding: 8px; color: var(--base06); font-size: 12px;">
+                            <input type="text" id="newDomainId" placeholder="Domain ID (optional)"
+                                style="background: var(--base03); border: 1px solid var(--base04); border-radius: 6px; padding: 8px; color: var(--base06); font-size: 12px;">
+                            <button onclick="addDomain()"
+                                style="background: var(--quantum-cyan); border: none; padding: 8px; border-radius: 6px; color: var(--base00); font-weight: 600; cursor: pointer;">
+                                ➕ Add Domain
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Domain Actions -->
+                <div style="display: flex; gap: 12px; margin-top: 16px;">
+                    <button onclick="checkDomainHealth()"
+                        style="flex: 1; background: var(--base02); border: 1px solid var(--base04); padding: 10px; border-radius: 6px; color: var(--base06); cursor: pointer;">
+                        🏥 Check Health
+                    </button>
+                    <button onclick="refreshDomains()"
+                        style="flex: 1; background: var(--base02); border: 1px solid var(--base04); padding: 10px; border-radius: 6px; color: var(--base06); cursor: pointer;">
+                        🔄 Refresh
+                    </button>
+                </div>
+
+                <!-- Q3 Carrier Status -->
+                <div style="margin-top: 16px; padding: 12px; background: var(--base02); border-radius: 8px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <span style="font-size: 13px;">Q3 Carrier Storage:</span>
+                        <span id="Q3 CarrierStatus" style="font-size: 13px; color: var(--base04);">Checking...</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Unified File Explorer -->
+        <div class="widget wide" id="fileExplorerPanel" style="margin-top: 16px;">
+            <div class="widget-header"
+                style="background: linear-gradient(135deg, rgba(139,233,253,0.2), rgba(80,250,123,0.2)); cursor: pointer;"
+                onclick="toggleFileExplorer()">
+                <h3>📁 Unified File Manager</h3>
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <span id="storageStats" style="font-size: 12px; color: var(--base04);">Loading...</span>
+                    <span id="fileExplorerToggle" style="font-size: 18px;">▼</span>
+                </div>
+            </div>
+            <div id="fileExplorerContent" class="widget-content" style="display: block;">
+                <!-- Quick Navigation -->
+                <div style="display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap;">
+                    <button onclick="navigateTo('')" class="nav-btn"
+                        style="background: var(--quantum-violet); color: white; border: none; padding: 6px 12px; border-radius: 6px; font-size: 12px; cursor: pointer;">
+                        🏠 Root
+                    </button>
+                    <button onclick="navigateTo('acldqa')" class="nav-btn"
+                        style="background: var(--base03); color: var(--base06); border: none; padding: 6px 12px; border-radius: 6px; font-size: 12px; cursor: pointer;">
+                        ⚡ ACLDQA
+                    </button>
+                    <button onclick="navigateTo('acldqa/sleeper')" class="nav-btn"
+                        style="background: var(--base03); color: var(--base06); border: none; padding: 6px 12px; border-radius: 6px; font-size: 12px; cursor: pointer;">
+                        😴 Sleepers
+                    </button>
+                    <button onclick="navigateTo('users')" class="nav-btn"
+                        style="background: var(--base03); color: var(--base06); border: none; padding: 6px 12px; border-radius: 6px; font-size: 12px; cursor: pointer;">
+                        👥 Users
+                    </button>
+                    <button onclick="navigateTo('db')" class="nav-btn"
+                        style="background: var(--base03); color: var(--base06); border: none; padding: 6px 12px; border-radius: 6px; font-size: 12px; cursor: pointer;">
+                        🗄️ Database
+                    </button>
+                    <button onclick="navigateTo('results')" class="nav-btn"
+                        style="background: var(--base03); color: var(--base06); border: none; padding: 6px 12px; border-radius: 6px; font-size: 12px; cursor: pointer;">
+                        📊 Results
+                    </button>
+                    <button onclick="refreshFileExplorer()"
+                        style="background: var(--base02); color: var(--base06); border: 1px solid var(--base04); padding: 6px 12px; border-radius: 6px; font-size: 12px; cursor: pointer; margin-left: auto;">
+                        🔄 Refresh
+                    </button>
+                </div>
+
+                <!-- Breadcrumb -->
+                <div id="breadcrumb"
+                    style="font-size: 12px; color: var(--base04); margin-bottom: 12px; padding: 8px; background: var(--base02); border-radius: 6px;">
+                    <span style="color: var(--quantum-cyan);">📁</span> /
+                </div>
+
+                <!-- File Explorer Container -->
+                <div id="filemanager"
+                    style="height: 350px; position: relative; border: 1px solid var(--base03); border-radius: 8px; overflow: hidden; background: var(--base01);">
+                </div>
+
+                <!-- File Actions -->
+                <div style="display: flex; gap: 8px; margin-top: 12px;">
+                    <button onclick="createNewFolder()"
+                        style="flex: 1; background: var(--base02); border: 1px solid var(--base04); padding: 8px; border-radius: 6px; color: var(--base06); cursor: pointer; font-size: 12px;">
+                        📁 New Folder
+                    </button>
+                    <button onclick="uploadFile()"
+                        style="flex: 1; background: var(--base02); border: 1px solid var(--base04); padding: 8px; border-radius: 6px; color: var(--base06); cursor: pointer; font-size: 12px;">
+                        📤 Upload
+                    </button>
+                    <button onclick="downloadSelected()"
+                        style="flex: 1; background: var(--base02); border: 1px solid var(--base04); padding: 8px; border-radius: 6px; color: var(--base06); cursor: pointer; font-size: 12px;">
+                        📥 Download
+                    </button>
+                    <button onclick="deleteSelected()"
+                        style="flex: 1; background: var(--base08); border: none; padding: 8px; border-radius: 6px; color: white; cursor: pointer; font-size: 12px;">
+                        🗑️ Delete
+                    </button>
+                </div>
+
+                <!-- Hidden file input for uploads -->
+                <input type="file" id="fileUploadInput" style="display: none;" multiple
+                    onchange="handleFileUpload(event)">
+            </div>
+        </div>
+    </main>
+
+    <style>
+        /* Toggle Switch */
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 26px;
+        }
+
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .toggle-switch .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: var(--base03);
+            transition: 0.3s;
+            border-radius: 26px;
+        }
+
+        .toggle-switch .slider:before {
+            position: absolute;
+            content: "";
+            height: 20px;
+            width: 20px;
+            left: 3px;
+            bottom: 3px;
+            background-color: var(--base05);
+            transition: 0.3s;
+            border-radius: 50%;
+        }
+
+        .toggle-switch input:checked+.slider {
+            background: linear-gradient(135deg, var(--quantum-violet), var(--quantum-cyan));
+        }
+
+        .toggle-switch input:checked+.slider:before {
+            transform: translateX(24px);
+        }
+
+        /* Range Slider */
+        input[type="range"] {
+            -webkit-appearance: none;
+            height: 6px;
+            background: var(--base03);
+            border-radius: 3px;
+            outline: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: var(--quantum-cyan);
+            cursor: pointer;
+        }
+
+        /* Button hover */
+        #generateBtn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(168, 85, 247, 0.4);
+        }
+
+        #generateBtn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+    </style>
+
+    <footer class="footer">
+        Cr8OS Alter v1.0.0 | Hybrid Monitoring Engine | <span id="lastUpdate">Waiting for first sync...</span>
+    </footer>
+
+    <script>
+        // Cr8OS Alter - Dashboard Logic with Q3 Carrier Sync
+
+        class Cr8OSAlter {
+            constructor() {
+                this.Q3 CarrierEndpoint = 'https://s3.Q3 Carrier.io';
+                this.bucket = 'cr8os1';
+                this.prefix = 'acldqa/';
+                this.isOnline = navigator.onLine;
+                this.cachedState = null;
+                this.heartbeats = [];
+
+                // Quantum Engine API
+                this.quantumApi = {
+                    baseUrl: 'http://172.233.130.112:4000',
+                    endpoints: {
+                        status: '/api/status',
+                        stats: '/api/stats',
+                        circuits: '/api/circuits'
+                    }
+                };
+
+                // CdQC Networks
+                this.networks = {
+                    ctqc: { name: 'CTQC', domain: 'b.cr8os.com', workers: 1000, type: 'd=3', color: '#6366f1' },
+                    cbqc: { name: 'CBQC', domain: 'c.cr8os.com', workers: 1000, type: 'd=2', color: '#22d3ee' },
+                    cqqc: { name: 'CQQC', domain: 'd.cr8os.com', workers: 1000, type: 'd=4', color: '#f59e0b' }
+                };
+                this.activeNetwork = 'ctqc';
+
+                // ACLDQ-AVIF Cache with mode-based routing
+                this.acldqCache = null;
+                this.storageMode = 'hybrid';  // 'quic', 'hybrid', 'Q3 Carrier'
+
+                this.init();
+            }
+
+            async fetchEngineStatus() {
+                try {
+                    const res = await fetch(this.quantumApi.baseUrl + this.quantumApi.endpoints.status);
+                    return await res.json();
+                } catch (e) {
+                    console.warn('Engine API not reachable:', e.message);
+                    return null;
+                }
+            }
+
+            async fetchEngineStats() {
+                try {
+                    const res = await fetch(this.quantumApi.baseUrl + this.quantumApi.endpoints.stats);
+                    return await res.json();
+                } catch (e) {
+                    return null;
+                }
+            }
+
+            async init() {
+                this.renderWorkerGrid();
+                this.renderRotationPhases();
+                this.setupOnlineListener();
+
+                // Initialize ACLDQ-AVIF Cache with S3 client wrapper
+                this.initACLDQCache();
+
+                // Initial sync
+                await this.syncWithQ3 Carrier();
+
+                // Periodic sync (every 30s when online)
+                setInterval(() => {
+                    if (this.isOnline) {
+                        this.syncWithQ3 Carrier();
+                    }
+                }, 30000);
+
+                // Update ACLDQ cache stats periodically
+                setInterval(() => this.updateACLDQCacheStats(), 5000);
+            }
+
+            /**
+             * Initialize ACLDQ-AVIF Cache with mode-aware S3 client
+             */
+            initACLDQCache() {
+                // Create a lightweight S3 client wrapper for browser use
+                const s3ClientWrapper = {
+                    _mode: this.storageMode,
+                    _bucket: this.bucket,
+                    _endpoint: this.Q3 CarrierEndpoint,
+                    _quicEndpoint: 'https://quic.aevov.io/s3',
+
+                    // Set storage mode (called when user changes mode)
+                    setMode(mode) {
+                        this._mode = mode;
+                        console.log(`🔀 ACLDQ S3 client mode: ${mode}`);
+                    },
+
+                    // PUT object with mode-based routing
+                    async putObject({ Bucket, Key, Body, ContentType, Metadata }) {
+                        const targets = this._getTargets();
+                        const results = [];
+
+                        for (const target of targets) {
+                            try {
+                                const response = await fetch(`${target.endpoint}/${Bucket}/${Key}`, {
+                                    method: 'PUT',
+                                    headers: {
+                                        'Content-Type': ContentType || 'application/octet-stream',
+                                        ...Object.entries(Metadata || {}).reduce((acc, [k, v]) => {
+                                            acc[`x-amz-meta-${k}`] = v;
+                                            return acc;
+                                        }, {})
+                                    },
+                                    body: Body
+                                });
+                                results.push({ target: target.name, success: response.ok });
+                            } catch (err) {
+                                console.warn(`PUT to ${target.name} failed:`, err.message);
+                                results.push({ target: target.name, success: false });
+                            }
+                        }
+
+                        return { success: results.some(r => r.success), results };
+                    },
+
+                    // GET object with fallback routing
+                    async getObject({ Bucket, Key }) {
+                        const targets = this._getTargets();
+
+                        for (const target of targets) {
+                            try {
+                                const response = await fetch(`${target.endpoint}/${Bucket}/${Key}`);
+                                if (response.ok) {
+                                    const data = await response.arrayBuffer();
+                                    return {
+                                        Body: {
+                                            async transformToByteArray() {
+                                                return new Uint8Array(data);
+                                            }
+                                        }
+                                    };
+                                }
+                            } catch (err) {
+                                console.warn(`GET from ${target.name} failed:`, err.message);
+                            }
+                        }
+
+                        throw new Error('Failed to fetch from all targets');
+                    },
+
+                    // Get targets based on current mode
+                    _getTargets() {
+                        switch (this._mode) {
+                            case 'quic':
+                                return [{ name: 'QUIC.cloud', endpoint: this._quicEndpoint }];
+                            case 'Q3 Carrier':
+                                return [{ name: 'Q3 Carrier', endpoint: this._endpoint }];
+                            case 'hybrid':
+                            default:
+                                // Hybrid: 70% QUIC, 30% Q3 Carrier - for writes, use both; for reads, prefer QUIC
+                                return [
+                                    { name: 'QUIC.cloud', endpoint: this._quicEndpoint, weight: 0.7 },
+                                    { name: 'Q3 Carrier', endpoint: this._endpoint, weight: 0.3 }
+                                ];
+                        }
+                    }
+                };
+
+                // Create cache instance (using inline implementation for browser)
+                this.acldqCache = {
+                    s3: s3ClientWrapper,
+                    bucket: this.bucket,
+                    prefix: 'mining/cache/',
+                    localCache: new Map(),
+                    stats: {
+                        hits: 0,
+                        misses: 0,
+                        bytesRead: 0,
+                        bytesWritten: 0,
+                        cachedCheckpoints: 0,
+                        workUnits: 0,
+                        avifCompressionRatio: 0
+                    },
+
+                    // Set storage mode
+                    setStorageMode(mode) {
+                        this.s3.setMode(mode);
+                    },
+
+                    // Get stats for UI
+                    getStats() {
+                        return {
+                            ...this.stats,
+                            cacheSize: this.localCache.size,
+                            hitRatio: this.stats.hits / (this.stats.hits + this.stats.misses) || 0,
+                            totalBytes: this.stats.bytesRead + this.stats.bytesWritten
+                        };
+                    },
+
+                    // Cache a checkpoint
+                    cacheCheckpoint(id, data) {
+                        this.localCache.set(`checkpoint:${id}`, { data, timestamp: Date.now() });
+                        this.stats.cachedCheckpoints++;
+                    },
+
+                    // Cache a work unit
+                    cacheWorkUnit(id, data) {
+                        this.localCache.set(`work:${id}`, { data, timestamp: Date.now() });
+                        this.stats.workUnits++;
+                    }
+                };
+
+                console.log('🗜️ ACLDQ-AVIF Cache initialized with mode:', this.storageMode);
+            }
+
+            /**
+             * Update storage mode on the cache (called from setStorageMode)
+             */
+            setACLDQStorageMode(mode) {
+                if (this.acldqCache) {
+                    this.storageMode = mode;
+                    this.acldqCache.setStorageMode(mode);
+                    console.log(`📦 ACLDQ cache storage mode: ${mode}`);
+                }
+            }
+
+            /**
+             * Update ACLDQ cache stats in the UI
+             */
+            updateACLDQCacheStats() {
+                if (!this.acldqCache) return;
+
+                const stats = this.acldqCache.getStats();
+
+                const checkpointsEl = document.getElementById('acldqCachedCheckpoints');
+                const workUnitsEl = document.getElementById('acldqWorkUnits');
+                const compressionEl = document.getElementById('acldqCompressionRatio');
+                const cacheSizeEl = document.getElementById('acldqCacheSize');
+
+                if (checkpointsEl) checkpointsEl.textContent = stats.cachedCheckpoints;
+                if (workUnitsEl) workUnitsEl.textContent = stats.workUnits;
+                if (compressionEl) {
+                    const ratio = stats.avifCompressionRatio || 0.5;  // 50% default
+                    compressionEl.textContent = `${Math.round(ratio * 100)}%`;
+                }
+                if (cacheSizeEl) {
+                    const bytes = stats.totalBytes || 0;
+                    if (bytes < 1024) {
+                        cacheSizeEl.textContent = `${bytes} B`;
+                    } else if (bytes < 1024 * 1024) {
+                        cacheSizeEl.textContent = `${(bytes / 1024).toFixed(1)} KB`;
+                    } else {
+                        cacheSizeEl.textContent = `${(bytes / 1024 / 1024).toFixed(1)} MB`;
+                    }
+                }
+            }
+
+
+            renderWorkerGrid() {
+                const grid = document.getElementById('workerGrid');
+                grid.innerHTML = '';
+
+                for (let i = 0; i <= 9; i++) {
+                    const node = document.createElement('div');
+                    node.className = 'worker-node idle';
+                    node.id = `worker-${i}`;
+                    node.innerHTML = `
+                        <span class="worker-id">${i}</span>
+                        <span class="worker-status">idle</span>
+                    `;
+                    grid.appendChild(node);
+                }
+            }
+
+            renderRotationPhases() {
+                const display = document.getElementById('rotationDisplay');
+                const intervals = [10, 90, 60, 50, 45, 40, 35, 30, 25, 20, 15];
+
+                display.innerHTML = '';
+
+                for (let i = 0; i <= 5; i++) {
+                    const target = 10 - i;
+                    const interval = intervals[i];
+
+                    const phase = document.createElement('div');
+                    phase.className = 'rotation-phase' + (i === 0 ? ' current' : '');
+                    phase.id = `phase-${i}`;
+                    phase.innerHTML = `
+                        <div class="phase-number">${i}</div>
+                        <div class="phase-info">
+                            <div class="target">→ Worker ${target}</div>
+                            <div class="interval">Every ${interval}s × 10 calls</div>
+                        </div>
+                        <div class="phase-progress">
+                            <div class="phase-progress-bar" style="width: ${i === 0 ? 30 : 0}%"></div>
+                        </div>
+                    `;
+                    display.appendChild(phase);
+                }
+            }
+
+            setupOnlineListener() {
+                window.addEventListener('online', () => {
+                    this.isOnline = true;
+                    this.updateSyncStatus(true);
+                    this.syncWithQ3 Carrier();
+                });
+
+                window.addEventListener('offline', () => {
+                    this.isOnline = false;
+                    this.updateSyncStatus(false);
+                });
+
+                this.updateSyncStatus(this.isOnline);
+            }
+
+            updateSyncStatus(online) {
+                const dot = document.getElementById('syncDot');
+                const text = document.getElementById('syncText');
+
+                if (online) {
+                    dot.classList.remove('offline');
+                    text.textContent = 'Connected to Q3 Carrier';
+                } else {
+                    dot.classList.add('offline');
+                    text.textContent = 'Offline - Cached View';
+                }
+            }
+
+            async syncWithQ3 Carrier() {
+                if (!this.isOnline) {
+                    console.log('Offline, using cached state');
+                    return this.loadFromCache();
+                }
+
+                try {
+                    // In production, this would fetch from Q3 Carrier S3
+                    // For now, simulate with localStorage as cache
+                    const state = await this.fetchQ3 CarrierState();
+
+                    this.cachedState = state;
+                    this.saveToCache(state);
+                    this.updateDashboard(state);
+
+                    document.getElementById('lastSync').textContent = new Date().toLocaleTimeString();
+                    document.getElementById('lastUpdate').textContent = 'Last sync: ' + new Date().toLocaleString();
+
+                } catch (err) {
+                    console.error('Sync failed:', err);
+                    this.loadFromCache();
+                }
+            }
+
+            async fetchQ3 CarrierState() {
+                // Simulated state for demo
+                // In production: fetch from Q3 Carrier S3
+                return {
+                    workers: this.generateWorkerStates(),
+                    rotation: {
+                        currentPhase: Math.floor(Math.random() * 6),
+                        callCount: Math.floor(Math.random() * 10) + 1,
+                    },
+                    metrics: {
+                        totalCalls: Math.floor(1000 + Math.random() * 500),
+                        avgLatency: Math.floor(50 + Math.random() * 100),
+                        errorRate: (Math.random() * 2).toFixed(1),
+                        uptime: (99 + Math.random()).toFixed(2),
+                    },
+                    Q3 Carrier: {
+                        objectsTracked: Math.floor(100 + Math.random() * 50),
+                        bandwidthUsed: (Math.random() * 100).toFixed(1),
+                        storageUsed: (Math.random() * 50).toFixed(1),
+                    },
+                    heartbeats: this.generateHeartbeats(),
+                };
+            }
+
+            generateWorkerStates() {
+                const states = [];
+                const statuses = ['active', 'resting', 'idle'];
+
+                for (let i = 0; i <= 9; i++) {
+                    states.push({
+                        id: i,
+                        status: statuses[Math.floor(Math.random() * 3)],
+                        callsReceived: Math.floor(Math.random() * 100),
+                    });
+                }
+                return states;
+            }
+
+            generateHeartbeats() {
+                const beats = [];
+                const workers = ['cron-worker-0', 'cron-worker-3', 'cron-worker-7', 'cron-worker-5'];
+                const messages = ['Heartbeat OK', 'Processing call', 'Resting', 'DB cleanup complete'];
+
+                for (let i = 0; i < 10; i++) {
+                    beats.push({
+                        time: new Date(Date.now() - i * 30000).toLocaleTimeString().slice(0, 5),
+                        worker: workers[Math.floor(Math.random() * workers.length)],
+                        message: messages[Math.floor(Math.random() * messages.length)],
+                    });
+                }
+                return beats;
+            }
+
+            updateDashboard(state) {
+                // Update workers
+                let activeCount = 0;
+                state.workers.forEach(worker => {
+                    const node = document.getElementById(`worker-${worker.id}`);
+                    if (node) {
+                        node.className = `worker-node ${worker.status}`;
+                        node.querySelector('.worker-status').textContent = worker.status;
+                        if (worker.status === 'active') activeCount++;
+                    }
+                });
+                document.getElementById('workerCount').textContent = `${activeCount}/10 Active`;
+
+                // Update rotation
+                document.querySelectorAll('.rotation-phase').forEach((el, i) => {
+                    el.classList.toggle('current', i === state.rotation.currentPhase);
+                    const bar = el.querySelector('.phase-progress-bar');
+                    if (bar) {
+                        bar.style.width = i === state.rotation.currentPhase
+                            ? `${state.rotation.callCount * 10}%`
+                            : '0%';
+                    }
+                });
+
+                // Update metrics
+                document.getElementById('totalCalls').textContent = state.metrics.totalCalls;
+                document.getElementById('avgLatency').textContent = state.metrics.avgLatency + 'ms';
+                document.getElementById('errorRate').textContent = state.metrics.errorRate + '%';
+                document.getElementById('uptime').textContent = state.metrics.uptime + '%';
+
+                // Update Q3 Carrier stats
+                document.getElementById('objectsTracked').textContent = state.Q3 Carrier.objectsTracked;
+                document.getElementById('bandwidthUsed').textContent = state.Q3 Carrier.bandwidthUsed + ' MB';
+                document.getElementById('storageUsed').textContent = state.Q3 Carrier.storageUsed + ' KB';
+
+                // Update heartbeats
+                const stream = document.getElementById('heartbeatStream');
+                stream.innerHTML = state.heartbeats.map(h => `
+                    <div class="heartbeat-entry">
+                        <span class="heartbeat-time">${h.time}</span>
+                        <span class="heartbeat-worker">${h.worker}</span>
+                        <span class="heartbeat-message">${h.message}</span>
+                    </div>
+                `).join('');
+            }
+
+            saveToCache(state) {
+                try {
+                    localStorage.setItem('cr8os-alter-cache', JSON.stringify({
+                        state,
+                        timestamp: Date.now(),
+                    }));
+                } catch (e) {
+                    console.warn('Cache save failed:', e);
+                }
+            }
+
+            loadFromCache() {
+                try {
+                    const cached = localStorage.getItem('cr8os-alter-cache');
+                    if (cached) {
+                        const { state, timestamp } = JSON.parse(cached);
+                        this.updateDashboard(state);
+                        document.getElementById('lastUpdate').textContent =
+                            'Cached: ' + new Date(timestamp).toLocaleString();
+                    }
+                } catch (e) {
+                    console.warn('Cache load failed:', e);
+                }
+            }
+        }
+
+        // Initialize
+        const dashboard = new Cr8OSAlter();
+
+        // ═══════════════════════════════════════════════════════
+        // SLEEPER COMPUTE CONTROLS
+        // ═══════════════════════════════════════════════════════
+
+        const ALTER_API = 'http://localhost:7472';
+        let sleeperEnabled = false;
+
+        // ═══════════════════════════════════════════════════════
+        // USER AUTHENTICATION (must be at top for onclick handlers)
+        // ═══════════════════════════════════════════════════════
+
+        let currentUser = null;
+        let authToken = localStorage.getItem('cr8os_token');
+        let isRegisterMode = false;
+
+        function showLoginModal() {
+            document.getElementById('loginModal').classList.remove('hidden');
+            document.getElementById('authUsername').focus();
+        }
+
+        function hideLoginModal() {
+            document.getElementById('loginModal').classList.add('hidden');
+            document.getElementById('authError').style.display = 'none';
+            document.getElementById('authUsername').value = '';
+            document.getElementById('authPassword').value = '';
+            document.getElementById('authPasswordConfirm').value = '';
+        }
+
+        function toggleAuthMode() {
+            isRegisterMode = !isRegisterMode;
+
+            if (isRegisterMode) {
+                document.getElementById('authTitle').textContent = '📝 Register';
+                document.getElementById('authSubmit').textContent = 'Create Account';
+                document.getElementById('authToggleText').textContent = 'Already have an account?';
+                document.getElementById('authToggleLink').textContent = 'Login';
+                document.getElementById('authPasswordConfirm').style.display = 'block';
+            } else {
+                document.getElementById('authTitle').textContent = '🔐 Login';
+                document.getElementById('authSubmit').textContent = 'Login';
+                document.getElementById('authToggleText').textContent = "Don't have an account?";
+                document.getElementById('authToggleLink').textContent = 'Register';
+                document.getElementById('authPasswordConfirm').style.display = 'none';
+            }
+
+            document.getElementById('authError').style.display = 'none';
+        }
+
+        async function submitAuth() {
+            const username = document.getElementById('authUsername').value.trim();
+            const password = document.getElementById('authPassword').value;
+            const passwordConfirm = document.getElementById('authPasswordConfirm').value;
+            const errorEl = document.getElementById('authError');
+
+            if (!username || !password) {
+                errorEl.textContent = 'Username and password required';
+                errorEl.style.display = 'block';
+                return;
+            }
+
+            if (isRegisterMode && password !== passwordConfirm) {
+                errorEl.textContent = 'Passwords do not match';
+                errorEl.style.display = 'block';
+                return;
+            }
+
+            try {
+                const endpoint = isRegisterMode ? '/api/auth/register' : '/api/auth/login';
+                const response = await fetch(ALTER_API + endpoint, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password }),
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    if (isRegisterMode) {
+                        isRegisterMode = false;
+                        await submitAuth();
+                        return;
+                    }
+
+                    authToken = data.token;
+                    localStorage.setItem('cr8os_token', authToken);
+                    currentUser = data.user;
+                    updateUserUI();
+                    hideLoginModal();
+                    console.log('🔐 Logged in as:', currentUser.username);
+                } else {
+                    errorEl.textContent = data.error || 'Authentication failed';
+                    errorEl.style.display = 'block';
+                }
+            } catch (err) {
+                errorEl.textContent = 'Connection error: ' + err.message;
+                errorEl.style.display = 'block';
+            }
+        }
+
+        async function logout() {
+            if (authToken) {
+                try {
+                    await fetch(ALTER_API + '/api/auth/logout', {
+                        method: 'POST',
+                        headers: { 'Authorization': `Bearer ${authToken}` },
+                    });
+                } catch (e) { }
+            }
+
+            authToken = null;
+            currentUser = null;
+            localStorage.removeItem('cr8os_token');
+            updateUserUI();
+            console.log('🔓 Logged out');
+        }
+
+        async function checkAuthStatus() {
+            if (!authToken) return;
+
+            try {
+                const response = await fetch(ALTER_API + '/api/auth/verify', {
+                    headers: { 'Authorization': `Bearer ${authToken}` },
+                });
+
+                const data = await response.json();
+
+                if (data.valid) {
+                    currentUser = data.user;
+                    updateUserUI();
+                    console.log('🔐 Session restored for:', currentUser.username);
+                } else {
+                    localStorage.removeItem('cr8os_token');
+                    authToken = null;
+                }
+            } catch (err) {
+                console.log('Auth check failed:', err.message);
+            }
+        }
+
+        function updateUserUI() {
+            const loginBtn = document.getElementById('loginBtn');
+            const userStatus = document.getElementById('userStatus');
+            const userAvatar = document.getElementById('userAvatar');
+            const userName = document.getElementById('userName');
+
+            if (currentUser) {
+                loginBtn.style.display = 'none';
+                userStatus.style.display = 'flex';
+                userAvatar.textContent = currentUser.username.charAt(0).toUpperCase();
+                userName.textContent = currentUser.displayName || currentUser.username;
+            } else {
+                loginBtn.style.display = 'block';
+                userStatus.style.display = 'none';
+            }
+        }
+
+        // Check auth on page load
+        checkAuthStatus();
+
+        // Toggle sleeper compute on/off
+        async function toggleSleeper() {
+            const toggle = document.getElementById('sleeperToggle');
+            sleeperEnabled = toggle.checked;
+
+            const statusEl = document.getElementById('sleeperStatus');
+
+            try {
+                const endpoint = sleeperEnabled ? '/api/enable' : '/api/disable';
+                const workers = parseInt(document.getElementById('workerSlider').value);
+
+                const response = await fetch(ALTER_API + endpoint, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ targetWorkers: workers }),
+                });
+
+                const result = await response.json();
+
+                if (sleeperEnabled) {
+                    statusEl.textContent = 'Enabled';
+                    statusEl.style.color = 'var(--base0B)';
+                    console.log('✅ Sleeper compute enabled:', result);
+                } else {
+                    statusEl.textContent = 'Disabled';
+                    statusEl.style.color = 'var(--base08)';
+                    console.log('😴 Sleeper compute disabled:', result);
+                }
+
+                // Refresh status
+                await refreshSleeperStatus();
+
+            } catch (err) {
+                console.error('Toggle failed:', err);
+                statusEl.textContent = 'Error';
+                statusEl.style.color = 'var(--base09)';
+                toggle.checked = !sleeperEnabled;
+                sleeperEnabled = !sleeperEnabled;
+            }
+        }
+
+        // Update worker target display
+        function updateWorkerTarget() {
+            const slider = document.getElementById('workerSlider');
+            const display = document.getElementById('workerTarget');
+            const value = parseInt(slider.value);
+
+            // Format with commas
+            display.textContent = value.toLocaleString();
+
+            // Debounced API call
+            clearTimeout(window.workerUpdateTimeout);
+            window.workerUpdateTimeout = setTimeout(async () => {
+                if (sleeperEnabled) {
+                    try {
+                        await fetch(ALTER_API + '/api/configure', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ targetWorkers: value }),
+                        });
+                    } catch (err) {
+                        console.warn('Config update failed:', err);
+                    }
+                }
+            }, 500);
+        }
+
+        // Generate ACLDQs on demand
+        async function generateAcldqs() {
+            if (!sleeperEnabled) {
+                alert('Please enable Sleeper Compute first');
+                return;
+            }
+
+            const countInput = document.getElementById('acldqCount');
+            const count = parseInt(countInput.value);
+            const btn = document.getElementById('generateBtn');
+            const progressDiv = document.getElementById('generateProgress');
+            const progressBar = document.getElementById('progressBar');
+            const progressText = document.getElementById('progressText');
+
+            if (count < 1 || isNaN(count)) {
+                alert('Please enter a valid count');
+                return;
+            }
+
+            // Disable button, show progress
+            btn.disabled = true;
+            btn.textContent = '⏳ Generating...';
+            progressDiv.style.display = 'block';
+            progressBar.style.width = '10%';
+            progressText.textContent = `Awakening sleeper pools for ${count.toLocaleString()} ACLDQs...`;
+
+            try {
+                // Start generation
+                const response = await fetch(ALTER_API + '/api/generate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ count }),
+                });
+
+                progressBar.style.width = '50%';
+                progressText.textContent = 'Spawning workers with 5120x ORIKI Deep...';
+
+                const result = await response.json();
+
+                if (result.success) {
+                    progressBar.style.width = '100%';
+                    progressText.textContent = `✅ Generated ${result.generated.toLocaleString()} ACLDQs!`;
+
+                    // Update stats
+                    if (result.stats) {
+                        document.getElementById('activePoolsCount').textContent = result.stats.activePools || 0;
+                        document.getElementById('totalSpawned').textContent = result.stats.totalWorkersSpawned?.toLocaleString() || '0';
+                        document.getElementById('acldqsGenerated').textContent = result.stats.totalAcldqsGenerated?.toLocaleString() || '0';
+                        document.getElementById('peakWorkers').textContent = result.stats.peakConcurrentWorkers?.toLocaleString() || '0';
+                    }
+
+                    setTimeout(() => {
+                        progressDiv.style.display = 'none';
+                        progressBar.style.width = '0%';
+                    }, 3000);
+                } else {
+                    progressBar.style.width = '100%';
+                    progressBar.style.background = 'var(--base08)';
+                    progressText.textContent = '❌ Generation failed: ' + (result.error || 'Unknown error');
+                }
+
+            } catch (err) {
+                console.error('Generation failed:', err);
+                progressBar.style.background = 'var(--base08)';
+                progressText.textContent = '❌ API Error: ' + err.message;
+            } finally {
+                btn.disabled = false;
+                btn.textContent = '🚀 Generate';
+            }
+        }
+
+        // Refresh sleeper status from API
+        async function refreshSleeperStatus() {
+            try {
+                const response = await fetch(ALTER_API + '/api/status');
+                const status = await response.json();
+
+                if (status.enabled !== undefined) {
+                    sleeperEnabled = status.enabled;
+                    document.getElementById('sleeperToggle').checked = sleeperEnabled;
+
+                    const statusEl = document.getElementById('sleeperStatus');
+                    statusEl.textContent = sleeperEnabled ? 'Enabled' : 'Disabled';
+                    statusEl.style.color = sleeperEnabled ? 'var(--base0B)' : 'var(--base08)';
+                }
+
+                if (status.stats) {
+                    document.getElementById('activePoolsCount').textContent = status.activePools || 0;
+                    document.getElementById('totalSpawned').textContent = status.stats.totalWorkersSpawned?.toLocaleString() || '0';
+                    document.getElementById('acldqsGenerated').textContent = status.stats.totalAcldqsGenerated?.toLocaleString() || '0';
+                    document.getElementById('peakWorkers').textContent = status.stats.peakConcurrentWorkers?.toLocaleString() || '0';
+                }
+
+            } catch (err) {
+                console.log('API not available, running in offline mode');
+            }
+        }
+
+        // Initial status check
+        refreshSleeperStatus();
+
+        // Periodic refresh
+        setInterval(refreshSleeperStatus, 10000);
+
+        // ═══════════════════════════════════════════════════════════════════
+        // BITCOIN CLOUD MINING - Q3 Carrier Perpetual Operation
+        // Powered by quantum-supercomputer + Q3 Carrier Cloud (NO Oracle)
+        // ═══════════════════════════════════════════════════════════════════
+
+        const MINING_API = 'http://localhost:7472';
+        let miningStats = {
+            running: true,
+            perpetual: true,
+            hashrate: 0,
+            workers: 0,
+            sharesAccepted: 0,
+            sharesRejected: 0,
+            btcEarned: '0.00000000',
+            uptime: 0,
+            pool: 'solo.ckpool.org:3333',
+            lastShare: null,
+            totalHashes: '0'
+        };
+
+        // Update mining worker slider label
+        function updateWorkerSliderLabel() {
+            const slider = document.getElementById('workerSlider');
+            const label = document.getElementById('workerSliderValue');
+            const value = parseInt(slider.value);
+
+            if (value >= 1000000) {
+                label.textContent = (value / 1000000).toFixed(1) + 'M';
+            } else if (value >= 1000) {
+                label.textContent = (value / 1000).toFixed(0) + 'K';
+            } else {
+                label.textContent = value.toString();
+            }
+        }
+
+        // Scale mining workers
+        async function scaleMiningWorkers(count) {
+            const targetWorkers = count || parseInt(document.getElementById('workerSlider').value);
+
+            try {
+                const response = await fetch(MINING_API + '/api/mining/scale', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ workers: targetWorkers })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    console.log(`⛏️ Scaled to ${targetWorkers.toLocaleString()} workers`);
+                    document.getElementById('workerSlider').value = targetWorkers;
+                    updateWorkerSliderLabel();
+                    await refreshMiningStatus();
+                }
+            } catch (err) {
+                console.log('Mining scale failed (cloud may be handling directly):', err.message);
+            }
+        }
+
+        // Change mining pool
+        async function changeMiningPool() {
+            const selector = document.getElementById('poolSelector');
+            const pool = selector.value;
+
+            try {
+                const response = await fetch(MINING_API + '/api/mining/pool', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ pool })
+                });
+
+                const result = await response.json();
+                console.log('Pool changed to:', pool);
+            } catch (err) {
+                console.log('Pool change handled by cloud');
+            }
+        }
+
+        // Refresh mining status from Flask monitor / cloud
+        async function refreshMiningStatus() {
+            try {
+                const response = await fetch(MINING_API + '/api/status');
+                const status = await response.json();
+
+                miningStats = { ...miningStats, ...status };
+                updateMiningUI(status);
+                updateCloudWorkerStatus(status.cloud_workers || []);
+
+            } catch (err) {
+                // Try direct cloud endpoint
+                try {
+                    const cloudResponse = await fetch('https://mining.cr8os.io/api/mining/status');
+                    const cloudStatus = await cloudResponse.json();
+                    updateMiningUI(cloudStatus);
+                    updateCloudWorkerStatus([{
+                        id: 'Q3 Carrier-edge',
+                        status: 'running',
+                        data: cloudStatus
+                    }]);
+                } catch (e) {
+                    // Offline mode - show perpetual indicator still running
+                    updatePerpetualIndicator(true);
+                }
+            }
+
+            // Update ACLDQ cache stats based on mining activity
+            updateACLDQCacheFromMining(miningStats);
+        }
+
+        // Update ACLDQ cache stats based on mining activity
+        function updateACLDQCacheFromMining(miningStats) {
+            if (typeof dashboard === 'undefined' || !dashboard.acldqCache) return;
+
+            const cache = dashboard.acldqCache;
+            const currentWorkers = miningStats.workers?.current || miningStats.workers || 0;
+            const shares = miningStats.shares?.accepted || miningStats.sharesAccepted || 0;
+
+            // Create checkpoint on share acceptance (simulates checkpoint caching)
+            if (shares > 0 && shares !== cache._lastShareCount) {
+                cache.stats.cachedCheckpoints = shares;
+                cache._lastShareCount = shares;
+            }
+
+            // Track work units based on active workers
+            if (currentWorkers > 0) {
+                cache.stats.workUnits = Math.floor(currentWorkers / 100) + (cache._baseWorkUnits || 0);
+                if (!cache._baseWorkUnits) cache._baseWorkUnits = 0;
+            }
+
+            // Calculate compression ratio based on data volume (AVIF is ~50% better than raw)
+            const totalHashes = parseInt(miningStats.totalHashes || miningStats.hashes_computed || 0);
+            if (totalHashes > 0) {
+                // Simulate compression: larger data = more efficient compression
+                const ratio = 0.45 + Math.min(0.25, totalHashes / 1e12 * 0.25);
+                cache.stats.avifCompressionRatio = ratio;
+                cache.stats.bytesWritten = Math.floor(totalHashes / 1000);
+                cache.stats.bytesRead = Math.floor(cache.stats.bytesWritten * 0.3);
+            }
+
+            // Trigger UI update
+            if (dashboard.updateACLDQCacheStats) {
+                dashboard.updateACLDQCacheStats();
+            }
+        }
+
+        // Update mining UI elements
+        function updateMiningUI(status) {
+            // Hashrate
+            const hashrate = status.hashrate?.formatted || formatHashrate(status.hashrate || 0);
+            document.getElementById('miningHashrate').textContent = hashrate;
+
+            // Workers
+            const workers = status.workers?.current || status.workers || 0;
+            document.getElementById('miningWorkers').textContent = `${workers.toLocaleString()} workers`;
+
+            // Shares
+            document.getElementById('miningSharesAccepted').textContent = status.shares?.accepted || status.sharesAccepted || 0;
+            document.getElementById('miningSharesRejected').textContent = status.shares?.rejected || status.sharesRejected || 0;
+
+            // BTC
+            const btc = status.earnings?.btc || status.btcEarned || '0.00000000';
+            document.getElementById('miningBTC').textContent = btc;
+            document.getElementById('miningUSD').textContent = `≈ $${(parseFloat(btc) * 100000).toFixed(2)}`;
+
+            // Daily estimate
+            if (status.uptime > 0) {
+                const dailyBtc = (parseFloat(btc) / status.uptime * 86400).toFixed(8);
+                document.getElementById('miningDailyBTC').textContent = dailyBtc;
+                document.getElementById('miningDailyUSD').textContent = `≈ $${(parseFloat(dailyBtc) * 100000).toFixed(2)}`;
+            }
+
+            // Uptime
+            const uptime = status.uptime?.formatted || formatUptime(status.uptime || 0);
+            document.getElementById('miningUptime').textContent = `Uptime: ${uptime}`;
+
+            // Pool
+            document.getElementById('miningPool').textContent = status.pool || 'solo.ckpool.org:3333';
+
+            // Last share
+            document.getElementById('miningLastShare').textContent = status.shares?.lastShare || status.lastShare || '--';
+
+            // Total hashes
+            const totalHashes = status.totalHashes || '0';
+            document.getElementById('miningTotalHashes').textContent = formatTotalHashes(totalHashes);
+
+            // Status label
+            const statusLabel = document.getElementById('miningStatusLabel');
+            if (status.running || status.perpetual) {
+                statusLabel.textContent = '● Running Perpetually';
+                statusLabel.style.color = 'var(--base0B)';
+                updatePerpetualIndicator(true);
+            } else {
+                statusLabel.textContent = '○ Stopped';
+                statusLabel.style.color = 'var(--base08)';
+                updatePerpetualIndicator(false);
+            }
+        }
+
+        // Update cloud worker status indicators
+        function updateCloudWorkerStatus(workers) {
+            const workerMap = {
+                'primary': { dot: 'primaryWorkerDot', status: 'primaryWorkerStatus' },
+                'fallback': { dot: 'fallbackWorkerDot', status: 'fallbackWorkerStatus' },
+                'edge': { dot: 'edgeWorkerDot', status: 'edgeWorkerStatus' },
+                'Q3 Carrier-edge': { dot: 'edgeWorkerDot', status: 'edgeWorkerStatus' }
+            };
+
+            // Reset all to initializing
+            Object.values(workerMap).forEach(w => {
+                const dot = document.getElementById(w.dot);
+                const status = document.getElementById(w.status);
+                if (dot) dot.style.background = 'var(--base04)';
+                if (status) status.textContent = '(initializing)';
+            });
+
+            // Update based on actual worker status
+            workers.forEach(worker => {
+                const id = worker.id || worker.name || '';
+                let key = id.includes('primary') ? 'primary'
+                    : id.includes('fallback') ? 'fallback'
+                        : id.includes('edge') || id.includes('Q3 Carrier') ? 'edge' : null;
+
+                if (key && workerMap[key]) {
+                    const dot = document.getElementById(workerMap[key].dot);
+                    const statusEl = document.getElementById(workerMap[key].status);
+
+                    if (worker.status === 'running') {
+                        if (dot) dot.style.background = 'var(--base0B)';
+                        if (statusEl) statusEl.textContent = '(running)';
+                    } else if (worker.status === 'standby') {
+                        if (dot) dot.style.background = 'var(--base09)';
+                        if (statusEl) statusEl.textContent = '(standby)';
+                    } else if (worker.status === 'unreachable') {
+                        if (dot) dot.style.background = 'var(--base08)';
+                        if (statusEl) statusEl.textContent = '(unreachable)';
+                    }
+                }
+            });
+        }
+
+        // Update perpetual indicator
+        function updatePerpetualIndicator(running) {
+            const indicator = document.getElementById('perpetualIndicator');
+            if (!indicator) return;
+
+            if (running) {
+                indicator.style.background = 'rgba(80,250,123,0.2)';
+                indicator.style.borderColor = 'var(--base0B)';
+            } else {
+                indicator.style.background = 'rgba(255,85,85,0.2)';
+                indicator.style.borderColor = 'var(--base08)';
+            }
+        }
+
+        // Format hashrate
+        function formatHashrate(h) {
+            if (typeof h === 'string' && h.includes('/s')) return h;
+            h = parseFloat(h) || 0;
+            if (h >= 1e18) return (h / 1e18).toFixed(2) + ' EH/s';
+            if (h >= 1e15) return (h / 1e15).toFixed(2) + ' PH/s';
+            if (h >= 1e12) return (h / 1e12).toFixed(2) + ' TH/s';
+            if (h >= 1e9) return (h / 1e9).toFixed(2) + ' GH/s';
+            if (h >= 1e6) return (h / 1e6).toFixed(2) + ' MH/s';
+            if (h >= 1e3) return (h / 1e3).toFixed(2) + ' KH/s';
+            return h.toFixed(2) + ' H/s';
+        }
+
+        // Format uptime
+        function formatUptime(s) {
+            if (typeof s === 'string') return s;
+            s = parseInt(s) || 0;
+            const days = Math.floor(s / 86400);
+            const hours = Math.floor((s % 86400) / 3600);
+            const mins = Math.floor((s % 3600) / 60);
+            if (days > 0) return `${days}d ${hours}h ${mins}m`;
+            if (hours > 0) return `${hours}h ${mins}m`;
+            return `${mins}m`;
+        }
+
+        // Format total hashes
+        function formatTotalHashes(h) {
+            h = BigInt(h || 0);
+            if (h >= 1000000000000n) return (Number(h / 1000000000n) / 1000).toFixed(2) + 'T';
+            if (h >= 1000000000n) return (Number(h / 1000000n) / 1000).toFixed(2) + 'G';
+            if (h >= 1000000n) return (Number(h / 1000n) / 1000).toFixed(2) + 'M';
+            if (h >= 1000n) return (Number(h) / 1000).toFixed(2) + 'K';
+            return h.toString();
+        }
+
+        // Initialize mining status
+        refreshMiningStatus();
+
+        // Refresh mining every 5 seconds
+        setInterval(refreshMiningStatus, 5000);
+
+        // ═══════════════════════════════════════════════════════
+        // QUIC.CLOUD DOMAIN MANAGEMENT
+        // ═══════════════════════════════════════════════════════
+
+        let domains = [];
+
+        // Refresh domains from API
+        async function refreshDomains() {
+            try {
+                const response = await fetch(ALTER_API + '/api/domains');
+                const data = await response.json();
+
+                if (data.success) {
+                    domains = data.domains || [];
+                    document.getElementById('domainCount').textContent = `${data.configured || 0} domains`;
+                    renderDomains();
+                }
+            } catch (err) {
+                console.log('Domain API not available:', err.message);
+            }
+        }
+
+        // Render domain list
+        function renderDomains() {
+            const list = document.getElementById('domainList');
+
+            if (!domains || domains.length === 0) {
+                list.innerHTML = `
+                    <div style="padding: 12px; background: var(--base02); border-radius: 6px; color: var(--base04); text-align: center;">
+                        No domains configured. Add via .env or the form above.
+                    </div>
+                `;
+                return;
+            }
+
+            list.innerHTML = domains.map(d => `
+                <div style="display: flex; align-items: center; gap: 8px; padding: 10px; background: var(--base02); border-radius: 6px; margin-bottom: 6px; ${d.isActive ? 'border: 1px solid var(--quantum-cyan);' : ''}">
+                    <div style="flex: 1;">
+                        <div style="font-weight: 600; color: var(--base06);">
+                            ${d.name} ${d.isActive ? '<span style="color: var(--quantum-cyan);">(Active)</span>' : ''}
+                        </div>
+                        <div style="font-size: 11px; color: var(--base04);">
+                            ${d.domainId ? `ID: ${d.domainId.slice(0, 12)}...` : 'No ID'} |
+                            ${d.health?.healthy !== false ? '🟢 Healthy' : '🔴 Unhealthy'}
+                        </div>
+                    </div>
+                    <button onclick="setActiveDomain('${d.name}')" 
+                        style="background: ${d.isActive ? 'var(--base03)' : 'var(--quantum-violet)'}; border: none; padding: 4px 8px; border-radius: 4px; color: white; font-size: 11px; cursor: pointer;"
+                        ${d.isActive ? 'disabled' : ''}>
+                        ${d.isActive ? 'Active' : 'Set Active'}
+                    </button>
+                    <button onclick="removeDomain('${d.name}')"
+                        style="background: var(--base08); border: none; padding: 4px 8px; border-radius: 4px; color: white; font-size: 11px; cursor: pointer;">
+                        ✕
+                    </button>
+                </div>
+            `).join('');
+        }
+
+        // Add a new domain
+        async function addDomain() {
+            const name = document.getElementById('newDomainName').value.trim();
+            const key = document.getElementById('newDomainKey').value.trim();
+            const id = document.getElementById('newDomainId').value.trim();
+
+            if (!key) {
+                alert('Domain key is required');
+                return;
+            }
+
+            try {
+                const response = await fetch(ALTER_API + '/api/domains', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        name: name || `domain-${Date.now()}`,
+                        domainKey: key,
+                        domainId: id,
+                    }),
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    // Clear form
+                    document.getElementById('newDomainName').value = '';
+                    document.getElementById('newDomainKey').value = '';
+                    document.getElementById('newDomainId').value = '';
+
+                    // Refresh list
+                    await refreshDomains();
+                    console.log('✅ Domain added:', result.domain);
+                } else {
+                    alert('Failed to add domain: ' + (result.error || 'Unknown error'));
+                }
+            } catch (err) {
+                alert('Failed to add domain: ' + err.message);
+            }
+        }
+
+        // Remove a domain
+        async function removeDomain(name) {
+            if (!confirm(`Remove domain "${name}"?`)) return;
+
+            try {
+                const response = await fetch(ALTER_API + `/api/domains/${encodeURIComponent(name)}`, {
+                    method: 'DELETE',
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    await refreshDomains();
+                    console.log('➖ Domain removed:', name);
+                } else {
+                    alert('Failed to remove domain: ' + (result.error || 'Unknown error'));
+                }
+            } catch (err) {
+                alert('Failed to remove domain: ' + err.message);
+            }
+        }
+
+        // Set active domain
+        async function setActiveDomain(name) {
+            try {
+                const response = await fetch(ALTER_API + '/api/domains/active', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ domain: name }),
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    await refreshDomains();
+                    console.log('🔀 Active domain set to:', name);
+                } else {
+                    alert('Failed to set active domain: ' + (result.error || 'Unknown error'));
+                }
+            } catch (err) {
+                alert('Failed to set active domain: ' + err.message);
+            }
+        }
+
+        // Check domain health
+        async function checkDomainHealth() {
+            const btn = event.target;
+            btn.textContent = '🔄 Checking...';
+            btn.disabled = true;
+
+            try {
+                const response = await fetch(ALTER_API + '/api/domains/health', {
+                    method: 'POST',
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    domains = result.domains || [];
+                    renderDomains();
+                    console.log('🏥 Health check complete');
+                }
+            } catch (err) {
+                console.error('Health check failed:', err);
+            } finally {
+                btn.textContent = '🏥 Check Health';
+                btn.disabled = false;
+            }
+        }
+
+        // Get Q3 Carrier status
+        async function getQ3 CarrierStatus() {
+            try {
+                const response = await fetch(ALTER_API + '/api/Q3 Carrier');
+                const data = await response.json();
+
+                const statusEl = document.getElementById('Q3 CarrierStatus');
+                if (data.configured) {
+                    statusEl.textContent = `✓ ${data.bucket} (${data.region})`;
+                    statusEl.style.color = 'var(--base0B)';
+                } else {
+                    statusEl.textContent = '✗ Not configured';
+                    statusEl.style.color = 'var(--base08)';
+                }
+            } catch (err) {
+                document.getElementById('Q3 CarrierStatus').textContent = 'API unavailable';
+            }
+        }
+
+        // Initial domain load
+        refreshDomains();
+        getQ3 CarrierStatus();
+
+        // Periodic domain refresh
+        setInterval(refreshDomains, 30000);
+
+        // ═══════════════════════════════════════════════════════
+        // UNIFIED FILE EXPLORER
+        // ═══════════════════════════════════════════════════════
+
+        let fileExplorer = null;
+        let currentPath = '';
+        let selectedItems = [];
+        let fileExplorerCollapsed = false;
+
+        // Toggle file explorer visibility
+        function toggleFileExplorer() {
+            fileExplorerCollapsed = !fileExplorerCollapsed;
+            const content = document.getElementById('fileExplorerContent');
+            const toggle = document.getElementById('fileExplorerToggle');
+
+            content.style.display = fileExplorerCollapsed ? 'none' : 'block';
+            toggle.textContent = fileExplorerCollapsed ? '▶' : '▼';
+        }
+
+        // Initialize file explorer
+        async function initFileExplorer() {
+            const elem = document.getElementById('filemanager');
+            if (!elem || !window.FileExplorer) {
+                console.log('FileExplorer not loaded, using simple list view');
+                await loadSimpleFileList('');
+                return;
+            }
+
+            const options = {
+                initpath: [['', 'Q3 Carrier Storage (/)', { canmodify: true }]],
+
+                onrefresh: async function (folder, required) {
+                    const $this = this;
+                    const path = folder.GetPathIDs().join('/');
+
+                    try {
+                        const response = await fetch(ALTER_API + '/api/files/list?path=' + encodeURIComponent(path));
+                        const data = await response.json();
+
+                        if (data.success) {
+                            const entries = data.entries.map(e => ({
+                                id: e.id,
+                                name: e.name,
+                                type: e.type,
+                                size: e.size,
+                                modified: e.modified,
+                                hash: e.hash,
+                            }));
+                            folder.SetEntries(entries);
+                            currentPath = path;
+                            updateBreadcrumb(path);
+                        } else if (required) {
+                            $this.SetNamedStatusBarText('folder', 'Failed: ' + data.error);
+                        }
+                    } catch (err) {
+                        console.error('Folder refresh failed:', err);
+                        if (required) {
+                            $this.SetNamedStatusBarText('folder', 'API error');
+                        }
+                    }
+                },
+
+                onrename: async function (renamed, folder, entry, newname) {
+                    try {
+                        const response = await fetch(ALTER_API + '/api/files/rename', {
+                            method: 'PUT',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ path: entry.id, newName: newname }),
+                        });
+                        const result = await response.json();
+                        renamed(result.success);
+                        if (result.success) folder.RefreshFolders(true);
+                    } catch (err) {
+                        renamed(false);
+                    }
+                },
+
+                ondelete: async function (deleted, folder, entry) {
+                    try {
+                        const response = await fetch(ALTER_API + '/api/files', {
+                            method: 'DELETE',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ path: entry.id }),
+                        });
+                        const result = await response.json();
+                        deleted(result.success);
+                    } catch (err) {
+                        deleted(false);
+                    }
+                },
+
+                onnewfolder: async function (created, folder) {
+                    const name = prompt('Enter folder name:');
+                    if (!name) {
+                        created(false);
+                        return;
+                    }
+                    try {
+                        const response = await fetch(ALTER_API + '/api/files/folder', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ path: currentPath, name }),
+                        });
+                        const result = await response.json();
+                        created(result.success);
+                        if (result.success) folder.RefreshFolders(true);
+                    } catch (err) {
+                        created(false);
+                    }
+                },
+
+                onselchanged: function (entries, numselected) {
+                    selectedItems = entries.filter(e => e.selected);
+                },
+
+                ondownload: async function (folder, entries, started) {
+                    for (const entry of entries) {
+                        if (entry.type === 'file') {
+                            const response = await fetch(ALTER_API + '/api/files/get?path=' + encodeURIComponent(entry.id) + '&download=true');
+                            const data = await response.json();
+                            if (data.downloadUrl) {
+                                window.open(data.downloadUrl, '_blank');
+                            }
+                        }
+                    }
+                    started();
+                },
+
+                tools: {
+                    item_checkboxes: true,
+                },
+
+                langmap: {
+                    'New folder': 'New Folder',
+                    'Loading...': 'Loading from Q3 Carrier...',
+                },
+            };
+
+            fileExplorer = new window.FileExplorer(elem, options);
+            console.log('📁 FileExplorer initialized');
+        }
+
+        // Simple fallback file list (when js-fileexplorer isn't loaded)
+        async function loadSimpleFileList(path) {
+            const container = document.getElementById('filemanager');
+            container.innerHTML = '<div style="padding: 20px; text-align: center; color: var(--base04);">Loading...</div>';
+
+            try {
+                const response = await fetch(ALTER_API + '/api/files/list?path=' + encodeURIComponent(path));
+                const data = await response.json();
+
+                if (!data.success) {
+                    container.innerHTML = `<div style="padding: 20px; color: var(--base08);">Error: ${data.error}</div>`;
+                    return;
+                }
+
+                currentPath = path;
+                updateBreadcrumb(path);
+
+                if (data.entries.length === 0) {
+                    container.innerHTML = '<div style="padding: 20px; text-align: center; color: var(--base04);">Empty folder</div>';
+                    return;
+                }
+
+                container.innerHTML = data.entries.map(entry => `
+                    <div class="file-item" data-id="${entry.id}" data-type="${entry.type}"
+                        style="display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-bottom: 1px solid var(--base02); cursor: pointer;"
+                        onclick="handleFileClick('${entry.id}', '${entry.type}')"
+                        ondblclick="handleFileDblClick('${entry.id}', '${entry.type}')">
+                        <input type="checkbox" class="file-checkbox" onclick="event.stopPropagation(); toggleSelection('${entry.id}')">
+                        <span style="font-size: 18px;">${entry.type === 'folder' ? '📁' : getFileIcon(entry.name)}</span>
+                        <div style="flex: 1;">
+                            <div style="color: var(--base06); font-weight: 500;">${entry.name}</div>
+                            ${entry.size ? `<div style="font-size: 11px; color: var(--base04);">${formatSize(entry.size)}</div>` : ''}
+                        </div>
+                        ${entry.type === 'file' ? `<span style="font-size: 11px; color: var(--base04);">${entry.attrs?.ext || ''}</span>` : ''}
+                    </div>
+                `).join('');
+
+            } catch (err) {
+                container.innerHTML = `<div style="padding: 20px; color: var(--base08);">API Error: ${err.message}</div>`;
+            }
+        }
+
+        // Navigate to path
+        function navigateTo(path) {
+            if (fileExplorer) {
+                // Use FileExplorer navigation
+                fileExplorer.SetPath(path.split('/').filter(p => p));
+            } else {
+                loadSimpleFileList(path);
+            }
+        }
+
+        // Update breadcrumb
+        function updateBreadcrumb(path) {
+            const parts = path.split('/').filter(p => p);
+            let html = '<span style="color: var(--quantum-cyan); cursor: pointer;" onclick="navigateTo(\'\')">📁 /</span>';
+
+            let accumulated = '';
+            for (const part of parts) {
+                accumulated += (accumulated ? '/' : '') + part;
+                html += ` <span style="cursor: pointer;" onclick="navigateTo('${accumulated}')">${part}</span> /`;
+            }
+
+            document.getElementById('breadcrumb').innerHTML = html;
+        }
+
+        // Handle file click (select)
+        function handleFileClick(id, type) {
+            const items = document.querySelectorAll('.file-item');
+            items.forEach(item => item.style.background = '');
+
+            const clicked = document.querySelector(`.file-item[data-id="${id}"]`);
+            if (clicked) {
+                clicked.style.background = 'var(--base02)';
+                selectedItems = [{ id, type }];
+            }
+        }
+
+        // Handle double-click (open folder or download file)
+        function handleFileDblClick(id, type) {
+            if (type === 'folder') {
+                navigateTo(id);
+            } else {
+                downloadFile(id);
+            }
+        }
+
+        // Toggle selection
+        function toggleSelection(id) {
+            const idx = selectedItems.findIndex(i => i.id === id);
+            if (idx >= 0) {
+                selectedItems.splice(idx, 1);
+            } else {
+                const item = document.querySelector(`.file-item[data-id="${id}"]`);
+                selectedItems.push({ id, type: item?.dataset.type || 'file' });
+            }
+        }
+
+        // Refresh file explorer
+        function refreshFileExplorer() {
+            if (fileExplorer) {
+                fileExplorer.GetCurrentFolder().RefreshFolders(true);
+            } else {
+                loadSimpleFileList(currentPath);
+            }
+            loadStorageStats();
+        }
+
+        // Create new folder
+        async function createNewFolder() {
+            const name = prompt('Enter folder name:');
+            if (!name) return;
+
+            try {
+                const response = await fetch(ALTER_API + '/api/files/folder', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ path: currentPath, name }),
+                });
+                const result = await response.json();
+
+                if (result.success) {
+                    refreshFileExplorer();
+                } else {
+                    alert('Failed: ' + result.error);
+                }
+            } catch (err) {
+                alert('Error: ' + err.message);
+            }
+        }
+
+        // Upload file
+        function uploadFile() {
+            document.getElementById('fileUploadInput').click();
+        }
+
+        // Handle file upload
+        async function handleFileUpload(event) {
+            const files = event.target.files;
+            if (!files.length) return;
+
+            for (const file of files) {
+                try {
+                    // For small files, upload directly via API
+                    if (file.size < 5 * 1024 * 1024) { // 5MB
+                        const reader = new FileReader();
+                        reader.onload = async (e) => {
+                            const base64 = e.target.result.split(',')[1];
+                            const response = await fetch(ALTER_API + '/api/files/upload', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                    path: currentPath,
+                                    name: file.name,
+                                    content: base64,
+                                    contentType: file.type,
+                                }),
+                            });
+                            const result = await response.json();
+                            if (result.success) {
+                                console.log('✅ Uploaded:', file.name);
+                            }
+                        };
+                        reader.readAsDataURL(file);
+                    } else {
+                        // For larger files, get presigned URL
+                        const response = await fetch(ALTER_API + '/api/files/upload-url', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                path: currentPath,
+                                name: file.name,
+                                contentType: file.type,
+                            }),
+                        });
+                        const result = await response.json();
+
+                        if (result.uploadUrl) {
+                            await fetch(result.uploadUrl, {
+                                method: 'PUT',
+                                body: file,
+                                headers: { 'Content-Type': file.type },
+                            });
+                            console.log('✅ Uploaded (presigned):', file.name);
+                        }
+                    }
+                } catch (err) {
+                    console.error('Upload failed:', file.name, err);
+                }
+            }
+
+            refreshFileExplorer();
+            event.target.value = '';
+        }
+
+        // Download selected
+        async function downloadSelected() {
+            if (selectedItems.length === 0) {
+                alert('Select files to download');
+                return;
+            }
+
+            for (const item of selectedItems) {
+                if (item.type === 'file') {
+                    await downloadFile(item.id);
+                }
+            }
+        }
+
+        // Download single file
+        async function downloadFile(path) {
+            try {
+                const response = await fetch(ALTER_API + '/api/files/get?path=' + encodeURIComponent(path) + '&download=true');
+                const data = await response.json();
+                if (data.downloadUrl) {
+                    window.open(data.downloadUrl, '_blank');
+                }
+            } catch (err) {
+                console.error('Download failed:', err);
+            }
+        }
+
+        // Delete selected
+        async function deleteSelected() {
+            if (selectedItems.length === 0) {
+                alert('Select items to delete');
+                return;
+            }
+
+            if (!confirm(`Delete ${selectedItems.length} item(s)?`)) return;
+
+            for (const item of selectedItems) {
+                try {
+                    await fetch(ALTER_API + '/api/files', {
+                        method: 'DELETE',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ path: item.id }),
+                    });
+                } catch (err) {
+                    console.error('Delete failed:', item.id, err);
+                }
+            }
+
+            selectedItems = [];
+            refreshFileExplorer();
+        }
+
+        // Load storage stats
+        async function loadStorageStats() {
+            try {
+                const response = await fetch(ALTER_API + '/api/files/stats');
+                const data = await response.json();
+
+                if (data.success) {
+                    document.getElementById('storageStats').textContent =
+                        `${data.totalObjects} objects • ${data.totalSizeFormatted}`;
+                }
+            } catch (err) {
+                document.getElementById('storageStats').textContent = 'Unable to load stats';
+            }
+        }
+
+        // Get file icon based on extension
+        function getFileIcon(name) {
+            const ext = name.split('.').pop().toLowerCase();
+            const icons = {
+                'json': '📋', 'acldq': '⚡', 'txt': '📝', 'md': '📖',
+                'js': '🟨', 'ts': '🔷', 'py': '🐍', 'rs': '🦀',
+                'png': '🖼️', 'jpg': '🖼️', 'jpeg': '🖼️', 'gif': '🖼️',
+                'pdf': '📕', 'zip': '📦', 'tar': '📦', 'gz': '📦',
+            };
+            return icons[ext] || '📄';
+        }
+
+        // Format file size
+        function formatSize(bytes) {
+            const units = ['B', 'KB', 'MB', 'GB'];
+            let i = 0;
+            while (bytes >= 1024 && i < units.length - 1) {
+                bytes /= 1024;
+                i++;
+            }
+            return bytes.toFixed(i > 0 ? 1 : 0) + ' ' + units[i];
+        }
+
+        // Initialize file explorer on load
+        setTimeout(() => {
+            initFileExplorer();
+            loadStorageStats();
+        }, 1000);
+
+        // ═══════════════════════════════════════════════════════
+        // STORAGE MODE SELECTOR
+        // ═══════════════════════════════════════════════════════
+
+        let currentStorageMode = 'hybrid';
+        let engineReferenceCollapsed = false;
+
+        // Load current storage mode
+        async function loadStorageMode() {
+            try {
+                const response = await fetch(ALTER_API + '/api/storage-mode');
+                const data = await response.json();
+
+                if (data.success) {
+                    currentStorageMode = data.mode;
+                    updateStorageModeUI(data.mode);
+                    document.getElementById('storageModeDescription').textContent = data.description;
+                }
+            } catch (err) {
+                console.log('Storage mode API not available');
+            }
+        }
+
+        // Set storage mode
+        async function setStorageMode(mode) {
+            try {
+                const response = await fetch(ALTER_API + '/api/storage-mode', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ mode }),
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    currentStorageMode = mode;
+                    updateStorageModeUI(mode);
+                    document.getElementById('storageModeDescription').textContent = data.description;
+
+                    // Update ACLDQ-AVIF Cache routing
+                    if (typeof dashboard !== 'undefined' && dashboard.setACLDQStorageMode) {
+                        dashboard.setACLDQStorageMode(mode);
+                    }
+
+                    console.log('📦 Storage mode set to:', mode);
+                }
+            } catch (err) {
+                console.error('Failed to set storage mode:', err);
+                // Still update UI for offline/fallback mode
+                currentStorageMode = mode;
+                updateStorageModeUI(mode);
+                if (typeof dashboard !== 'undefined' && dashboard.setACLDQStorageMode) {
+                    dashboard.setACLDQStorageMode(mode);
+                }
+            }
+        }
+
+        // Update storage mode UI
+        function updateStorageModeUI(mode) {
+            // Update radio buttons
+            document.getElementById('modeQuic').checked = mode === 'quic';
+            document.getElementById('modeHybrid').checked = mode === 'hybrid';
+            document.getElementById('modeQ3 Carrier').checked = mode === 'Q3 Carrier';
+
+            // Update card styles
+            document.getElementById('modeCardQuic').classList.toggle('active', mode === 'quic');
+            document.getElementById('modeCardHybrid').classList.toggle('active', mode === 'hybrid');
+            document.getElementById('modeCardQ3 Carrier').classList.toggle('active', mode === 'Q3 Carrier');
+
+            // Update label
+            const labels = { quic: 'QUIC Only', hybrid: 'Hybrid', Q3 Carrier: 'Q3 Carrier Only' };
+            document.getElementById('storageModeLabel').textContent = labels[mode] || mode;
+
+            // ─────────────────────────────────────────────────────────────
+            // ACLDQ-AVIF Cache Mode Sync
+            // ─────────────────────────────────────────────────────────────
+            const acldqModeSync = document.getElementById('acldqModeSync');
+            const acldqCacheDot = document.getElementById('acldqCacheDot');
+            const acldqCacheStatus = document.getElementById('acldqCacheStatus');
+
+            if (acldqModeSync) {
+                const modeSyncLabels = {
+                    quic: 'Routed via QUIC.cloud (100%)',
+                    hybrid: 'Synced with Hybrid mode (70% QUIC / 30% Q3 Carrier)',
+                    Q3 Carrier: 'Routed via Q3 Carrier S3 (100%)'
+                };
+                acldqModeSync.textContent = modeSyncLabels[mode] || `Synced with ${mode} mode`;
+                acldqModeSync.style.color = mode === 'hybrid' ? 'var(--quantum-cyan)' :
+                    mode === 'quic' ? 'var(--base0B)' : 'var(--quantum-violet)';
+            }
+
+            if (acldqCacheDot) {
+                acldqCacheDot.style.background = 'var(--base0B)';  // Active green
+            }
+
+            if (acldqCacheStatus) {
+                acldqCacheStatus.textContent = 'Active';
+                acldqCacheStatus.style.color = 'var(--base0B)';
+            }
+
+            // Log cache routing for debugging
+            console.log(`🗜️ ACLDQ-AVIF cache routing updated: ${mode}`);
+        }
+
+        // ═══════════════════════════════════════════════════════
+        // ENGINE REFERENCE
+        // ═══════════════════════════════════════════════════════
+
+        function toggleEngineReference() {
+            engineReferenceCollapsed = !engineReferenceCollapsed;
+            document.getElementById('engineReferenceContent').style.display = engineReferenceCollapsed ? 'none' : 'block';
+            document.getElementById('engineToggle').textContent = engineReferenceCollapsed ? '▶' : '▼';
+        }
+
+        // Browse engine directory
+        async function browseEngineDir(subPath) {
+            const container = document.getElementById('engineFileBrowser');
+            container.innerHTML = '<div style="color: var(--base04); text-align: center; padding: 20px;">Loading...</div>';
+
+            try {
+                const response = await fetch(ALTER_API + '/api/engine/files?path=' + encodeURIComponent(subPath));
+                const data = await response.json();
+
+                if (!data.success) {
+                    container.innerHTML = `<div style="color: var(--base08); padding: 10px;">Error: ${data.error}</div>`;
+                    return;
+                }
+
+                if (data.entries.length === 0) {
+                    container.innerHTML = '<div style="color: var(--base04); text-align: center; padding: 20px;">No matching files</div>';
+                    return;
+                }
+
+                container.innerHTML = data.entries.map(entry => `
+                    <div style="display: flex; align-items: center; gap: 8px; padding: 6px 10px; border-bottom: 1px solid var(--base02);">
+                        <span style="font-size: 14px;">${entry.type === 'folder' ? '📁' : getFileIcon(entry.name)}</span>
+                        <span style="flex: 1; font-size: 12px; color: var(--base06);">${entry.name}</span>
+                        ${entry.size ? `<span style="font-size: 10px; color: var(--base04);">${formatSize(entry.size)}</span>` : ''}
+                    </div>
+                `).join('');
+
+            } catch (err) {
+                container.innerHTML = `<div style="color: var(--base08); padding: 10px;">API Error: ${err.message}</div>`;
+            }
+        }
+
+        // Check engine deployment status with progress display
+        async function checkEngineStatus() {
+            const readinessEl = document.getElementById('deploymentReadiness');
+            const checklistEl = document.getElementById('componentChecklist');
+
+            try {
+                readinessEl.innerHTML = '<span style="color: var(--quantum-cyan);">🔍 Checking...</span>';
+                checklistEl.innerHTML = '<div style="color: var(--base04);">Connecting to Q3 Carrier...</div>';
+                console.log('🔧 Starting engine status check...');
+
+                const response = await fetch(ALTER_API + '/api/engine/status');
+                const data = await response.json();
+
+                if (data.success) {
+                    console.log(`🔧 Engine check complete: ${data.presentCount}/${data.totalRequired}`);
+
+                    // Update readiness status
+                    readinessEl.innerHTML = data.deploymentReady
+                        ? '<span style="color: var(--base0B);">✓ Ready</span>'
+                        : `<span style="color: var(--base09);">${data.presentCount}/${data.totalRequired} Components</span>`;
+
+                    // Show component list with details
+                    checklistEl.innerHTML = data.components.map((c, i) => `
+                        <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 6px; padding: 4px 8px; background: ${c.exists ? 'rgba(80,250,123,0.1)' : 'rgba(255,85,85,0.1)'}; border-radius: 4px;">
+                            <span>${c.exists ? '✅' : '❌'}</span>
+                            <span style="flex: 1; color: ${c.exists ? 'var(--base06)' : 'var(--base08)'}; font-size: 11px;">${c.name}</span>
+                            ${c.size ? `<span style="font-size: 10px; color: var(--base04);">${formatSize(c.size)}</span>` : ''}
+                        </div>
+                    `).join('');
+
+                    document.getElementById('engineFilesStatus').textContent =
+                        data.deploymentReady ? '✓ Ready' : `${data.presentCount}/${data.totalRequired}`;
+
+                    // Log each component status
+                    data.components.forEach(c => {
+                        console.log(`  ${c.exists ? '✅' : '❌'} ${c.name} (${c.path})`);
+                    });
+
+                } else {
+                    console.error('🔧 Engine check failed:', data.error);
+                    readinessEl.textContent = 'Check failed';
+                    checklistEl.innerHTML = `<div style="color: var(--base08); padding: 8px;">${data.error}</div>`;
+                }
+
+            } catch (err) {
+                console.error('🔧 Engine check error:', err.message);
+                readinessEl.innerHTML = '<span style="color: var(--base08);">API Error</span>';
+                checklistEl.innerHTML = `<div style="color: var(--base08); padding: 8px;">${err.message}</div>`;
+                document.getElementById('engineFilesStatus').textContent = '?';
+            }
+        }
+
+        // ═══════════════════════════════════════════════════════
+        // CONFIG PANEL (Q3 Carrier-backed versioning)
+        // ═══════════════════════════════════════════════════════
+
+        let currentSystemConfig = null;
+
+        async function loadConfigPanel() {
+            try {
+                // Load current config
+                const configRes = await fetch(ALTER_API + '/api/config');
+                const configData = await configRes.json();
+
+                if (configData.success) {
+                    currentSystemConfig = configData.config;
+                    updateConfigDisplay(configData.config, configData.status);
+                }
+
+                // Load versions
+                await loadConfigVersions();
+
+                // Load changelog
+                await loadConfigChangelog();
+
+                // Also fetch live domains from domain manager
+                try {
+                    const domainsRes = await fetch(ALTER_API + '/api/domains');
+                    const domainsData = await domainsRes.json();
+                    if (domainsData.success) {
+                        document.getElementById('configDomainCount').textContent = domainsData.configured || 0;
+                    }
+                } catch (e) {
+                    console.log('Domain fetch optional error:', e.message);
+                }
+
+            } catch (err) {
+                console.error('Config panel error:', err);
+                document.getElementById('configSyncStatus').innerHTML = '<span style="color: var(--base08);">❌ Error</span>';
+            }
+        }
+
+        function updateConfigDisplay(config, status) {
+            document.getElementById('configVersion').textContent = `v${config._version || 1}`;
+            document.getElementById('configSyncStatus').innerHTML = '<span style="color: var(--base0B);">✓ Synced</span>';
+
+            // Storage mode
+            const mode = config.storageWorkflow?.mode || 'hybrid';
+            const modeLabels = { quic: 'QUIC Only', hybrid: 'Hybrid (70/30)', Q3 Carrier: 'Q3 Carrier Only' };
+            document.getElementById('configStorageMode').textContent = modeLabels[mode] || mode;
+
+            // Domain count
+            document.getElementById('configDomainCount').textContent = (config.domains || []).length;
+
+            // Max workers
+            document.getElementById('configMaxWorkers').textContent = config.workers?.maxWorkers || 100;
+
+            // Updated at
+            if (config._updatedAt) {
+                const date = new Date(config._updatedAt);
+                document.getElementById('configUpdatedAt').textContent = date.toLocaleString();
+            }
+        }
+
+        async function loadConfigVersions() {
+            try {
+                const res = await fetch(ALTER_API + '/api/config/versions');
+                const data = await res.json();
+
+                if (data.success && data.versions.length > 0) {
+                    const select = document.getElementById('configVersionSelect');
+                    select.innerHTML = data.versions.map(v =>
+                        `<option value="${v.version}">v${v.version} - ${v.description || 'No description'}</option>`
+                    ).join('');
+                }
+            } catch (err) {
+                console.error('Failed to load versions:', err);
+            }
+        }
+
+        async function loadConfigChangelog() {
+            try {
+                const res = await fetch(ALTER_API + '/api/config/changelog?limit=10');
+                const data = await res.json();
+
+                const changelogEl = document.getElementById('configChangelog');
+
+                if (data.success && data.changelog.length > 0) {
+                    changelogEl.innerHTML = data.changelog.map(entry => {
+                        const date = new Date(entry.timestamp).toLocaleDateString();
+                        return `<div style="margin-bottom: 6px; padding-bottom: 6px; border-bottom: 1px solid var(--base03);">
+                            <span style="color: var(--quantum-cyan);">v${entry.version}</span>
+                            <span style="color: var(--base04);"> ${date}</span><br>
+                            ${entry.description}
+                        </div>`;
+                    }).join('');
+                } else {
+                    changelogEl.innerHTML = '<div style="color: var(--base04); text-align: center;">No changes yet</div>';
+                }
+            } catch (err) {
+                console.error('Failed to load changelog:', err);
+            }
+        }
+
+        function previewConfigVersion() {
+            const select = document.getElementById('configVersionSelect');
+            const version = select.value;
+            console.log('Preview version:', version);
+        }
+
+        async function rollbackConfig() {
+            const select = document.getElementById('configVersionSelect');
+            const version = select.value;
+
+            if (!version) {
+                alert('Please select a version to rollback to');
+                return;
+            }
+
+            if (!authToken) {
+                alert('Please login to rollback config');
+                showLoginModal();
+                return;
+            }
+
+            if (!confirm(`Rollback to v${version}?\n\nThis will create a new version with the old settings.`)) {
+                return;
+            }
+
+            try {
+                const res = await fetch(ALTER_API + `/api/config/rollback/${version}`, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${authToken}` },
+                });
+
+                const data = await res.json();
+
+                if (data.success) {
+                    alert(`Rolled back to v${version}!\nNew version: v${data.version}`);
+                    await loadConfigPanel();
+                } else {
+                    alert('Rollback failed: ' + data.error);
+                }
+            } catch (err) {
+                alert('Rollback error: ' + err.message);
+            }
+        }
+
+        // ═══════════════════════════════════════════════════════
+        // CONFIRMATION DIALOGS (for worker mesh controls)
+        // ═══════════════════════════════════════════════════════
+
+        // Override toggleSleeper with confirmation
+        const originalToggleSleeper = toggleSleeper;
+        toggleSleeper = async function () {
+            const toggle = document.getElementById('sleeperToggle');
+            const willEnable = toggle.checked;
+
+            if (willEnable) {
+                if (!confirm('⚠️ ENABLE WORKER MESH?\n\nThis will activate background sleeper workers.\nAre you sure you want to proceed?')) {
+                    toggle.checked = false;
+                    return;
+                }
+            } else {
+                if (!confirm('⚠️ DISABLE WORKER MESH?\n\nAll active sleeper workers will be terminated.\nAre you sure you want to proceed?')) {
+                    toggle.checked = true;
+                    return;
+                }
+            }
+
+            // Call original function
+            return originalToggleSleeper();
+        };
+
+        // Override generateAcldqs with confirmation
+        const originalGenerateAcldqs = generateAcldqs;
+        generateAcldqs = async function () {
+            const count = document.getElementById('acldqCount').value;
+
+            if (!confirm(`⚠️ GENERATE ${parseInt(count).toLocaleString()} ACLDQs?\n\nThis may consume significant resources.\nAre you sure you want to proceed?`)) {
+                return;
+            }
+
+            return originalGenerateAcldqs();
+        };
+
+        // ═══════════════════════════════════════════════════════
+        // INTERSECTION OBSERVER - EFFICIENCY OPTIMIZATION
+        // ═══════════════════════════════════════════════════════
+
+        // Track visible panels to avoid unnecessary work
+        const visiblePanels = new Set();
+        const panelInitialized = new Map();
+        const panelObservers = new Map();
+
+        // Panel-specific initialization functions (called when first visible)
+        const panelInitFunctions = {
+            'storageModePanel': () => {
+                loadStorageMode();
+                console.log('📦 Storage mode panel initialized');
+            },
+            'engineReferencePanel': () => {
+                checkEngineStatus();
+                console.log('🔧 Engine reference panel initialized');
+            },
+            'fileExplorerPanel': () => {
+                initFileExplorer();
+                loadStorageStats();
+                console.log('📁 File explorer panel initialized');
+            },
+            'domainManagementPanel': () => {
+                refreshDomains();
+                getQ3 CarrierStatus();
+                console.log('🌐 Domain management panel initialized');
+            },
+            'sleeperPanel': () => {
+                refreshSleeperStatus();
+                console.log('⚡ Sleeper panel initialized');
+            },
+            'configPanel': () => {
+                loadConfigPanel();
+                console.log('⚙️ Config panel initialized');
+            }
+        };
+
+        // Panel-specific refresh functions (called when visible and needs update)
+        const panelRefreshFunctions = {
+            'storageModePanel': loadStorageMode,
+            'engineReferencePanel': checkEngineStatus,
+            'fileExplorerPanel': loadStorageStats,
+            'domainManagementPanel': refreshDomains,
+            'sleeperPanel': refreshSleeperStatus,
+            'configPanel': loadConfigPanel,
+        };
+
+        // Create master IntersectionObserver
+        const masterObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                const panelId = entry.target.id;
+
+                if (entry.isIntersecting) {
+                    // Panel became visible
+                    visiblePanels.add(panelId);
+
+                    // Initialize if first time visible (lazy loading)
+                    if (!panelInitialized.get(panelId)) {
+                        const initFn = panelInitFunctions[panelId];
+                        if (initFn) {
+                            // Defer initialization slightly to avoid janky scroll
+                            setTimeout(initFn, 100);
+                            panelInitialized.set(panelId, true);
+                        }
+                    }
+
+                    console.log(`👁️ Panel visible: ${panelId}`);
+                } else {
+                    // Panel no longer visible
+                    visiblePanels.delete(panelId);
+                    console.log(`🙈 Panel hidden: ${panelId}`);
+                }
+            });
+        }, {
+            rootMargin: '50px',  // Start loading slightly before panel is visible
+            threshold: 0.1       // Trigger when 10% visible
+        });
+
+        // Register all panels with the observer
+        function initIntersectionObservers() {
+            const observablePanels = [
+                'storageModePanel',
+                'engineReferencePanel',
+                'configPanel',
+                'fileExplorerPanel',
+                'domainManagementPanel',
+                'sleeperPanel'
+            ];
+
+            observablePanels.forEach(panelId => {
+                const element = document.getElementById(panelId);
+                if (element) {
+                    masterObserver.observe(element);
+                    panelObservers.set(panelId, masterObserver);
+                }
+            });
+
+            console.log('👁️ IntersectionObserver initialized for', observablePanels.length, 'panels');
+        }
+
+        // Smart refresh - only refresh visible panels
+        function smartRefresh() {
+            visiblePanels.forEach(panelId => {
+                const refreshFn = panelRefreshFunctions[panelId];
+                if (refreshFn) {
+                    refreshFn();
+                }
+            });
+        }
+
+        // Optimized periodic refresh - only updates visible panels
+        let smartRefreshInterval = null;
+
+        function startSmartRefresh(intervalMs = 30000) {
+            if (smartRefreshInterval) {
+                clearInterval(smartRefreshInterval);
+            }
+
+            smartRefreshInterval = setInterval(() => {
+                if (visiblePanels.size > 0) {
+                    console.log(`🔄 Smart refresh: ${visiblePanels.size} visible panels`);
+                    smartRefresh();
+                } else {
+                    console.log('💤 Skipping refresh - no panels visible');
+                }
+            }, intervalMs);
+        }
+
+        // Visibility change handler - pause/resume when tab hidden
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) {
+                console.log('💤 Tab hidden - pausing updates');
+                if (smartRefreshInterval) {
+                    clearInterval(smartRefreshInterval);
+                    smartRefreshInterval = null;
+                }
+            } else {
+                console.log('👁️ Tab visible - resuming updates');
+                smartRefresh(); // Immediate refresh
+                startSmartRefresh(30000);
+            }
+        });
+
+        // Scroll performance optimization - throttle during scroll
+        let isScrolling = false;
+        let scrollTimeout = null;
+
+        window.addEventListener('scroll', () => {
+            isScrolling = true;
+
+            if (scrollTimeout) {
+                clearTimeout(scrollTimeout);
+            }
+
+            scrollTimeout = setTimeout(() => {
+                isScrolling = false;
+            }, 150);
+        }, { passive: true });
+
+        // Check if should update (skip during active scrolling)
+        function shouldUpdate() {
+            return !isScrolling && !document.hidden;
+        }
+
+        // Optimized status refresh that checks visibility
+        const originalRefreshSleeperStatus = refreshSleeperStatus;
+        refreshSleeperStatus = async function () {
+            if (!shouldUpdate()) {
+                console.log('⏭️ Skipping status refresh (scrolling or hidden)');
+                return;
+            }
+
+            if (!visiblePanels.has('sleeperPanel')) {
+                console.log('⏭️ Skipping status refresh (panel not visible)');
+                return;
+            }
+
+            return originalRefreshSleeperStatus();
+        };
+
+        // ═══════════════════════════════════════════════════════
+        // INITIALIZATION
+        // ═══════════════════════════════════════════════════════
+
+        // Initialize intersection observers on DOM load
+        document.addEventListener('DOMContentLoaded', () => {
+            initIntersectionObservers();
+            startSmartRefresh(30000);
+            initDraggable();
+            initResizable();
+            initVisualizer();
+
+            // Update QUIC domain count when available
+            setTimeout(() => {
+                refreshDomains().then(() => {
+                    const count = domains.length;
+                    document.getElementById('activeQuicDomains').textContent = count;
+                });
+            }, 2000);
+        });
+
+        // Fallback for immediate execution (in case DOMContentLoaded already fired)
+        if (document.readyState !== 'loading') {
+            initIntersectionObservers();
+            startSmartRefresh(30000);
+            initDraggable();
+            initResizable();
+            initVisualizer();
+        }
+
+        // ═══════════════════════════════════════════════════════
+        // UX ENHANCEMENTS (Draggable, Resizable, Visualizer)
+        // ═══════════════════════════════════════════════════════
+
+        // --- Reorder Mode Toggle ---
+        // Bento mode = clean CSS grid auto-layout (default)
+        // Custom mode = saved absolute positions (toggle ON)
+        let customLayoutEnabled = false;
+
+        function toggleReorderMode() {
+            customLayoutEnabled = !customLayoutEnabled;
+
+            const btn = document.getElementById('reorderToggle');
+            const icon = document.getElementById('reorderIcon');
+            const text = document.getElementById('reorderText');
+            const widgets = document.querySelectorAll('.widget');
+            const grid = document.querySelector('.dashboard-grid');
+
+            if (customLayoutEnabled) {
+                // Switch to Custom Layout mode (apply saved positions)
+                btn.style.background = 'var(--quantum-violet)';
+                btn.style.borderColor = 'var(--quantum-violet)';
+                btn.style.color = 'white';
+                icon.textContent = '📐';
+                text.textContent = 'Custom';
+
+                // Load and apply saved layout
+                const savedLayout = JSON.parse(localStorage.getItem('cr8os_layout') || '{}');
+
+                widgets.forEach((widget, index) => {
+                    const id = widget.id || `widget-${index}`;
+                    widget.id = id;
+                    widget.classList.add('custom-layout');
+
+                    if (savedLayout[id]) {
+                        widget.style.position = 'absolute';
+                        widget.style.left = savedLayout[id].left;
+                        widget.style.top = savedLayout[id].top;
+                        widget.style.width = savedLayout[id].width || 'auto';
+                        widget.style.height = savedLayout[id].height || 'auto';
+                        widget.style.zIndex = savedLayout[id].zIndex || 10;
+                    }
+                });
+
+                grid.style.position = 'relative';
+                grid.style.minHeight = '2000px'; // Allow room for positioned widgets
+
+                showToast('Custom layout loaded. Drag widgets to reposition.');
+            } else {
+                // Switch to Bento Grid mode (auto CSS grid)
+                btn.style.background = 'var(--base02)';
+                btn.style.borderColor = 'var(--base03)';
+                btn.style.color = 'var(--base05)';
+                icon.textContent = '🧱';
+                text.textContent = 'Bento';
+
+                // Reset to CSS grid flow
+                widgets.forEach(widget => {
+                    widget.classList.remove('custom-layout');
+                    widget.style.position = '';
+                    widget.style.left = '';
+                    widget.style.top = '';
+                    widget.style.width = '';
+                    widget.style.height = '';
+                    widget.style.zIndex = '';
+                    widget.style.cursor = '';
+                });
+
+                grid.style.position = '';
+                grid.style.minHeight = '';
+
+                showToast('Bento grid layout');
+            }
+        }
+
+        function showToast(message) {
+            // Remove existing toast
+            const existingToast = document.querySelector('.toast-notification');
+            if (existingToast) existingToast.remove();
+
+            const toast = document.createElement('div');
+            toast.className = 'toast-notification';
+            toast.textContent = message;
+            toast.style.cssText = `
+                position: fixed;
+                bottom: 24px;
+                left: 50%;
+                transform: translateX(-50%);
+                background: var(--base02);
+                color: var(--base06);
+                padding: 12px 24px;
+                border-radius: 8px;
+                font-size: 13px;
+                box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+                border: 1px solid var(--base03);
+                z-index: 9999;
+                animation: slideUp 0.3s ease;
+            `;
+            document.body.appendChild(toast);
+
+            setTimeout(() => toast.remove(), 3000);
+        }
+
+        // Add toast animation CSS
+        const toastStyle = document.createElement('style');
+        toastStyle.textContent = `
+            @keyframes slideUp {
+                from { opacity: 0; transform: translate(-50%, 20px); }
+                to { opacity: 1; transform: translate(-50%, 0); }
+            }
+            .widget.custom-layout {
+                cursor: grab;
+                box-shadow: 0 8px 32px rgba(168, 85, 247, 0.2);
+            }
+            .widget.custom-layout:hover {
+                outline: 2px solid var(--quantum-violet);
+                outline-offset: 2px;
+            }
+            .widget.custom-layout .widget-header {
+                background: linear-gradient(135deg, rgba(168,85,247,0.15), rgba(34,211,238,0.1)) !important;
+                cursor: grab;
+            }
+            .widget.custom-layout.dragging {
+                cursor: grabbing;
+                z-index: 1000 !important;
+            }
+        `;
+        document.head.appendChild(toastStyle);
+
+        // --- Draggable Widgets ---
+        function initDraggable() {
+            const grid = document.querySelector('.dashboard-grid');
+            const widgets = document.querySelectorAll('.widget');
+
+            // Load saved positions
+            const savedLayout = JSON.parse(localStorage.getItem('cr8os_layout') || '{}');
+
+            widgets.forEach((widget, index) => {
+                const id = widget.id || `widget-${index}`;
+                widget.id = id; // Ensure ID
+                widget.classList.add('draggable');
+
+                // Apply saved position
+                if (savedLayout[id]) {
+                    widget.style.position = 'absolute';
+                    widget.style.left = savedLayout[id].left;
+                    widget.style.top = savedLayout[id].top;
+                    widget.style.width = savedLayout[id].width;
+                    widget.style.height = savedLayout[id].height;
+                    widget.style.zIndex = savedLayout[id].zIndex || 10;
+                }
+
+                const header = widget.querySelector('.widget-header');
+                if (!header) return;
+
+                let isDragging = false;
+                let startX, startY, initialLeft, initialTop;
+
+                header.addEventListener('mousedown', (e) => {
+                    if (e.target.tagName === 'BUTTON' || e.target.tagName === 'INPUT') return;
+
+                    // Only allow dragging when custom layout mode is enabled
+                    if (!customLayoutEnabled) return;
+
+                    isDragging = true;
+                    widget.classList.add('dragging');
+
+                    // Switch to absolute positioning if not already
+                    if (widget.style.position !== 'absolute') {
+                        const rect = widget.getBoundingClientRect();
+                        const gridRect = grid.getBoundingClientRect();
+                        widget.style.position = 'absolute';
+                        widget.style.left = (rect.left - gridRect.left) + 'px';
+                        widget.style.top = (rect.top - gridRect.top) + 'px';
+                        widget.style.width = rect.width + 'px';
+                        widget.style.zIndex = 100;
+                    }
+
+                    startX = e.clientX;
+                    startY = e.clientY;
+                    initialLeft = parseInt(widget.style.left || 0);
+                    initialTop = parseInt(widget.style.top || 0);
+                });
+
+                document.addEventListener('mousemove', (e) => {
+                    if (!isDragging) return;
+                    e.preventDefault();
+
+                    const dx = e.clientX - startX;
+                    const dy = e.clientY - startY;
+
+                    widget.style.left = (initialLeft + dx) + 'px';
+                    widget.style.top = (initialTop + dy) + 'px';
+                });
+
+                document.addEventListener('mouseup', () => {
+                    if (!isDragging) return;
+                    isDragging = false;
+                    widget.classList.remove('dragging');
+                    widget.style.zIndex = 10;
+                    saveLayout();
+                });
+            });
+        }
+
+        // --- Resizable Widgets ---
+        function initResizable() {
+            const widgets = document.querySelectorAll('.widget');
+
+            widgets.forEach(widget => {
+                const handle = document.createElement('div');
+                handle.className = 'resize-handle';
+                widget.appendChild(handle);
+                widget.classList.add('resizable');
+
+                let isResizing = false;
+                let startX, startY, startWidth, startHeight;
+
+                handle.addEventListener('mousedown', (e) => {
+                    isResizing = true;
+                    e.stopPropagation(); // Prevent drag
+                    startX = e.clientX;
+                    startY = e.clientY;
+                    startWidth = parseInt(document.defaultView.getComputedStyle(widget).width, 10);
+                    startHeight = parseInt(document.defaultView.getComputedStyle(widget).height, 10);
+                });
+
+                document.addEventListener('mousemove', (e) => {
+                    if (!isResizing) return;
+
+                    const width = startWidth + (e.clientX - startX);
+                    const height = startHeight + (e.clientY - startY);
+
+                    widget.style.width = width + 'px';
+                    widget.style.height = height + 'px';
+                });
+
+                document.addEventListener('mouseup', () => {
+                    if (isResizing) {
+                        isResizing = false;
+                        saveLayout();
+                    }
+                });
+            });
+        }
+
+        function saveLayout() {
+            const layout = {};
+            document.querySelectorAll('.widget').forEach(widget => {
+                if (widget.id) {
+                    layout[widget.id] = {
+                        left: widget.style.left,
+                        top: widget.style.top,
+                        width: widget.style.width,
+                        height: widget.style.height,
+                        zIndex: widget.style.zIndex
+                    };
+                }
+            });
+            localStorage.setItem('cr8os_layout', JSON.stringify(layout));
+        }
+
+        // --- Sleeper Compute Visualizer ---
+        let visualizerRunning = false;
+
+        function initVisualizer() {
+            const canvas = document.getElementById('sleeperVisualizer');
+            if (!canvas) return;
+
+            const ctx = canvas.getContext('2d');
+            let particles = [];
+            let nodes = [];
+
+            // Resize canvas
+            function resize() {
+                const rect = canvas.getBoundingClientRect();
+                canvas.width = rect.width;
+                canvas.height = rect.height;
+                initNodes();
+            }
+            window.addEventListener('resize', resize);
+            resize();
+
+            function initNodes() {
+                nodes = [];
+                // Create a cloud of nodes representing workers
+                for (let i = 0; i < 50; i++) {
+                    nodes.push({
+                        x: Math.random() * canvas.width,
+                        y: Math.random() * canvas.height,
+                        state: 'dormant', // dormant, active, sleeping
+                        activationTime: 0
+                    });
+                }
+            }
+
+            // Animation Loop
+            function animate() {
+                if (!document.getElementById('sleeperPanel')) return;
+
+                ctx.fillStyle = getComputedStyle(document.body).getPropertyValue('--base01');
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                const isSystemActive = document.getElementById('sleeperStatus').textContent === 'Active';
+                const pill = document.getElementById('visStatus');
+                if (pill) {
+                    pill.className = isSystemActive ? 'status-pill active' : 'status-pill dormant';
+                    pill.textContent = isSystemActive ? 'Active Mesh' : 'Dormant';
+                }
+
+                // Draw Nodes
+                nodes.forEach(node => {
+                    // Random activation if system is active
+                    if (isSystemActive && Math.random() < 0.05 && node.state === 'dormant') {
+                        node.state = 'active';
+                        node.activationTime = 20; // frames
+
+                        // Spawn particle
+                        particles.push({
+                            x: node.x,
+                            y: node.y,
+                            vx: (canvas.width / 2 - node.x) * 0.05, // Move to center
+                            vy: (canvas.height / 2 - node.y) * 0.05,
+                            life: 30
+                        });
+                    }
+
+                    if (node.activationTime > 0) {
+                        node.activationTime--;
+                        ctx.fillStyle = '#a855f7'; // Violet
+                        ctx.beginPath();
+                        ctx.arc(node.x, node.y, 4, 0, Math.PI * 2);
+                        ctx.fill();
+
+                        // Glow
+                        ctx.shadowBlur = 10;
+                        ctx.shadowColor = '#a855f7';
+                        ctx.stroke();
+                        ctx.shadowBlur = 0;
+                    } else {
+                        node.state = 'dormant';
+                        ctx.fillStyle = '#2a2a3a'; // Base03
+                        ctx.beginPath();
+                        ctx.arc(node.x, node.y, 2, 0, Math.PI * 2);
+                        ctx.fill();
+                    }
+                });
+
+                // Draw Particles (Data flow to center)
+                for (let i = particles.length - 1; i >= 0; i--) {
+                    let p = particles[i];
+                    p.x += p.vx;
+                    p.y += p.vy;
+                    p.life--;
+
+                    ctx.fillStyle = '#22d3ee'; // Cyan
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, 2, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    if (p.life <= 0) {
+                        particles.splice(i, 1);
+                        // Flash center
+                        ctx.fillStyle = 'rgba(80, 250, 123, 0.5)'; // Green flash
+                        ctx.beginPath();
+                        ctx.arc(canvas.width / 2, canvas.height / 2, 20, 0, Math.PI * 2);
+                        ctx.fill();
+                    }
+                }
+
+                // Draw Central Hub (Q3 Carrier)
+                ctx.fillStyle = '#ffffff';
+                ctx.beginPath();
+                ctx.arc(canvas.width / 2, canvas.height / 2, 6, 0, Math.PI * 2);
+                ctx.fill();
+
+                requestAnimationFrame(animate);
+            }
+
+            animate();
+        }
+
+
+
+        // ═══════════════════════════════════════════════════════════════════════════
+        // BITCOIN MINING WIDGET - API Integration
+        // ═══════════════════════════════════════════════════════════════════════════
+
+        // Fetch mining status every 2 seconds
+        async function fetchMiningStatus() {
+            try {
+                const res = await fetch('/api/mining/status');
+                const data = await res.json();
+                if (data.success) {
+                    // Update hashrate
+                    document.getElementById('miningHashrate').textContent = data.hashrate.formatted;
+                    document.getElementById('miningWorkers').textContent = `${data.workers.current.toLocaleString()} workers`;
+
+                    // Update connection status
+                    const statusLabel = document.getElementById('miningStatusLabel');
+                    if (data.connected) {
+                        statusLabel.textContent = `● Connected (${data.mode || 'REAL'})`;
+                        statusLabel.style.color = 'var(--base0B)';
+                    } else {
+                        statusLabel.textContent = '○ Connecting...';
+                        statusLabel.style.color = 'var(--base09)';
+                    }
+
+                    // Update shares
+                    document.getElementById('miningSharesAccepted').textContent = data.shares.accepted.toLocaleString();
+                    document.getElementById('miningSharesRejected').textContent = data.shares.rejected.toLocaleString();
+
+                    // Update earnings
+                    document.getElementById('miningBTC').textContent = data.earnings.btc;
+                    document.getElementById('miningUSD').textContent = `≈ $${parseFloat(data.earnings.usd).toLocaleString()}`;
+
+                    // Update uptime
+                    document.getElementById('miningUptime').textContent = `Uptime: ${data.uptime.formatted}`;
+
+                    // Update pool and last share
+                    document.getElementById('miningPool').textContent = data.pool;
+                    document.getElementById('miningLastShare').textContent = data.shares.lastShare ?
+                        new Date(data.shares.lastShare).toLocaleTimeString() : '--';
+                    document.getElementById('miningTotalHashes').textContent =
+                        BigInt(data.totalHashes).toLocaleString();
+
+                    // Update worker slider to match
+                    document.getElementById('workerSlider').value = data.workers.current;
+                    updateWorkerSliderLabel();
+                }
+            } catch (e) {
+                console.log('[Mining Widget] Status fetch skipped:', e.message);
+            }
+        }
+
+        // Fetch daily estimates
+        async function fetchMiningEarnings() {
+            try {
+                const res = await fetch('/api/mining/earnings');
+                const data = await res.json();
+                if (data.success) {
+                    document.getElementById('miningDailyBTC').textContent = data.estimatedDaily.btc;
+                    document.getElementById('miningDailyUSD').textContent = `≈ $${data.estimatedDaily.usd}`;
+                }
+            } catch (e) { }
+        }
+
+        // Scale workers
+        async function scaleMiningWorkers(count) {
+            const workers = count || parseInt(document.getElementById('workerSlider').value);
+            try {
+                const res = await fetch('/api/mining/scale', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ workers })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    showToast(`Scaled to ${data.workers.toLocaleString()} workers`);
+                    fetchMiningStatus();
+                }
+            } catch (e) {
+                showToast('Scale failed: ' + e.message, 'error');
+            }
+        }
+
+        // Change pool
+        async function changeMiningPool() {
+            const pool = document.getElementById('poolSelector').value;
+            try {
+                const res = await fetch('/api/mining/pool', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ pool })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    showToast(`Pool changed to ${pool}`);
+                    fetchMiningStatus();
+                }
+            } catch (e) {
+                showToast('Pool change failed: ' + e.message, 'error');
+            }
+        }
+
+        // Update slider label
+        function updateWorkerSliderLabel() {
+            const val = parseInt(document.getElementById('workerSlider').value);
+            document.getElementById('workerSliderValue').textContent = val.toLocaleString();
+        }
+
+        // Start mining widget updates
+        setInterval(fetchMiningStatus, 2000);
+        setInterval(fetchMiningEarnings, 10000);
+        setTimeout(fetchMiningStatus, 500);
+        setTimeout(fetchMiningEarnings, 1000);
+
+
+        console.log('🚀 Cr8OS Alter initialized with IntersectionObserver optimizations');
+        console.log('⛏️ Bitcoin Mining Widget active - polling /api/mining/status');
+    </script>
+</body>
+
+</html>

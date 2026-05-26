@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quantum Cloud Dashboard | cr8OS</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/mult1v4c/hestia-core@main/dist/hestia.css">
+    <style>
+        :root {
+            --quantum-primary: #00d4ff;
+            --quantum-secondary: #7b2cbf;
+            --quantum-dark: #1a1a2e;
+        }
+
+        body {
+            background: linear-gradient(135deg, var(--quantum-dark) 0%, #16213e 100%);
+            color: #fff;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        }
+
+        .quantum-header {
+            background: rgba(0, 212, 255, 0.1);
+            border-bottom: 2px solid var(--quantum-primary);
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin: 2rem 0;
+        }
+
+        .stat-card {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--quantum-primary);
+            border-radius: 12px;
+            padding: 1.5rem;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--quantum-primary);
+        }
+
+        .stat-label {
+            font-size: 0.9rem;
+            color: #aaa;
+            margin-top: 0.5rem;
+        }
+
+        .panel {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .job-card {
+            background: rgba(0, 212, 255, 0.05);
+            border-left: 3px solid var(--quantum-primary);
+            padding: 1rem;
+            margin: 0.5rem 0;
+            border-radius: 4px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .status-completed {
+            color: #4ade80;
+        }
+
+        .status-running {
+            color: #fbbf24;
+        }
+
+        .status-queued {
+            color: var(--quantum-primary);
+        }
+
+        .status-failed {
+            color: #ef4444;
+        }
+
+        button {
+            background: linear-gradient(135deg, var(--quantum-primary), var(--quantum-secondary));
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: transform 0.2s;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+        }
+
+        textarea,
+        input {
+            width: 100%;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(0, 212, 255, 0.3);
+            color: white;
+            padding: 0.75rem;
+            border-radius: 8px;
+            margin: 0.5rem 0;
+            font-family: 'Courier New', monospace;
+        }
+
+        .quic-badge {
+            display: inline-block;
+            background: rgba(0, 212, 255, 0.2);
+            padding: 0.25rem 0.75rem;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            margin-left: 1rem;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="quantum-header">
+        <h1>⚛️ Quantum Cloud <span class="quic-badge">⚡ QUIC/HTTP3 Edge</span></h1>
+        <div id="userInfo" style="margin-top: 0.5rem; opacity: 0.8;">
+            Tier: <span id="userTier">-</span> |
+            Gates Used: <span id="gatesUsed">0</span>
+        </div>
+    </div>
+
+    <div style="max-width: 1400px; margin: 0 auto; padding: 0 2rem;">
+        <!-- Global Stats -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-value" id="globalHashRate">0 EH/s</div>
+                <div class="stat-label">Global Hash Rate</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="activeNodes">0</div>
+                <div class="stat-label">Active Edge Nodes</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="distributedQubits">0</div>
+                <div class="stat-label">Distributed Qubits</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="globalLatency">0ms</div>
+                <div class="stat-label">Global Latency</div>
+            </div>
+        </div>
+
+        <!-- Job Submission -->
+        <div class="panel">
+            <h2>🚀 Submit Quantum Circuit</h2>
+            <form id="submitJobForm">
+                <label>Circuit JSON (Qiskit/Cirq compatible)</label>
+                <textarea id="circuitInput" rows="6"
+                    placeholder='{"qubits": 3, "gates": [{"type": "h", "qubit": 0}, {"type": "cx", "control": 0, "target": 1}]}'></textarea>
+
+                <label>Shots</label>
+                <input type="number" id="shotsInput" value="1000" min="1" max="100000">
+
+                <label>Priority (Pro+ only)</label>
+                <select id="priorityInput" style="width: 100%;">
+                    <option value="standard">Standard (Free)</option>
+                    <option value="high">High (+50% cost)</option>
+                </select>
+
+                <button type="submit" style="margin-top: 1rem;">⚡ Submit to QUIC Edge</button>
+            </form>
+        </div>
+
+        <!-- Active Jobs -->
+        <div class="panel">
+            <h2>🎯 Jobs <span style="font-size: 0.9rem; opacity: 0.7;">(Auto-refresh: 5s)</span></h2>
+            <div id="jobsList"></div>
+        </div>
+    </div>
+
+    <script>
+        const API_KEY = localStorage.getItem('qc_api_key') || 'demo_key';
+        const API_BASE = '/api/v1';
+
+        // Submit Job
+        document.getElementById('submitJobForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const circuit = JSON.parse(document.getElementById('circuitInput').value);
+            const shots = parseInt(document.getElementById('shotsInput').value);
+            const priority = document.getElementById('priorityInput').value;
+
+            const response = await fetch(`${API_BASE}/jobs`, {
+                method: 'POST',
+                headers: {
+                    'X-API-Key': API_KEY,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ circuit, shots, priority })
+            });
+
+            const result = await response.json();
+            alert(`✅ Job ${result.job_id} submitted to ${result.edge_node}`);
+            loadJobs();
+        });
+
+        // Load Jobs
+        async function loadJobs() {
+            const response = await fetch(`${API_BASE}/jobs`, {
+                headers: { 'X-API-Key': API_KEY }
+            });
+            const data = await response.json();
+
+            const jobsHtml = data.jobs?.map(job => `
+                <div class="job-card">
+                    <div>
+                        <strong>${job.id}</strong>
+                        <span class="status-${job.status}"> • ${job.status.toUpperCase()}</span>
+                    </div>
+                    <div>
+                        ${job.qubits} qubits | ${job.shots} shots
+                    </div>
+                </div>
+            `).join('') || '<p style="opacity: 0.5;">No jobs yet. Submit your first quantum circuit!</p>';
+
+            document.getElementById('jobsList').innerHTML = jobsHtml;
+        }
+
+        // Load Global Stats
+        async function loadGlobalStats() {
+            try {
+                const response = await fetch(`${API_BASE}/stats/global`);
+                const stats = await response.json();
+
+                document.getElementById('globalHashRate').textContent =
+                    (stats.hash_rate / 1e18).toFixed(2) + ' EH/s';
+                document.getElementById('activeNodes').textContent = stats.active_nodes;
+                document.getElementById('distributedQubits').textContent = stats.distributed_qubits;
+                document.getElementById('globalLatency').textContent =
+                    Math.round(stats.global_latency_ms) + 'ms';
+            } catch (err) {
+                console.error('Stats error:', err);
+            }
+        }
+
+        // Auto-refresh
+        setInterval(loadJobs, 5000);
+        setInterval(loadGlobalStats, 10000);
+
+        loadJobs();
+        loadGlobalStats();
+
+        // First-time setup
+        if (!localStorage.getItem('qc_api_key')) {
+            const email = prompt('Welcome to QuantumCloud! Enter your email to get started:');
+            if (email) {
+                fetch(`${API_BASE}/users/register`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, tier: 'free' })
+                }).then(r => r.json()).then(data => {
+                    localStorage.setItem('qc_api_key', data.api_key);
+                    alert(`✅ Registration complete! Your API key: ${data.api_key}`);
+                    location.reload();
+                });
+            }
+        }
+    </script>
+</body>
+
+</html>

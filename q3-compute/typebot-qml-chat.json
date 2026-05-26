@@ -1,0 +1,470 @@
+{
+    "version": "6",
+    "id": "q3-qml-chat",
+    "name": "Q3 QML Assistant",
+    "variables": [
+        {
+            "id": "user_query",
+            "name": "User Query",
+            "isSessionVariable": true
+        },
+        {
+            "id": "q3_endpoint",
+            "name": "Q3 Endpoint",
+            "value": "https://your-site.com/wp-json/q3-compute/v1"
+        },
+        {
+            "id": "q3_auth",
+            "name": "Q3 Auth",
+            "value": "Basic base64(user:pass)"
+        },
+        {
+            "id": "operation_type",
+            "name": "Operation Type",
+            "isSessionVariable": true
+        },
+        {
+            "id": "features_input",
+            "name": "Features Input",
+            "isSessionVariable": true
+        },
+        {
+            "id": "model_id",
+            "name": "Model ID",
+            "isSessionVariable": true
+        },
+        {
+            "id": "compute_result",
+            "name": "Compute Result",
+            "isSessionVariable": true
+        },
+        {
+            "id": "training_data",
+            "name": "Training Data",
+            "isSessionVariable": true
+        }
+    ],
+    "groups": [
+        {
+            "id": "welcome",
+            "title": "Welcome",
+            "blocks": [
+                {
+                    "id": "welcome_msg",
+                    "type": "text",
+                    "content": "⚛️ **Q3 Quantum ML Assistant**\n\nI can help you with:\n• 🎯 Classification (categorize data)\n• 🎓 Training (create custom models)\n• 🔢 Regression (predict values)\n• 🧬 Quantum Kernels (SVM enhancement)\n\nWhat would you like to do?"
+                },
+                {
+                    "id": "operation_choice",
+                    "type": "choice input",
+                    "options": {
+                        "items": [
+                            {
+                                "id": "classify",
+                                "content": "🎯 Classify Data"
+                            },
+                            {
+                                "id": "train",
+                                "content": "🎓 Train a Model"
+                            },
+                            {
+                                "id": "regress",
+                                "content": "🔢 Predict Value"
+                            },
+                            {
+                                "id": "kernel",
+                                "content": "🧬 Quantum Kernel"
+                            },
+                            {
+                                "id": "status",
+                                "content": "📊 Check Capacity"
+                            }
+                        ]
+                    },
+                    "outgoingEdgeId": "route_operation"
+                }
+            ]
+        },
+        {
+            "id": "classify_flow",
+            "title": "Classification",
+            "blocks": [
+                {
+                    "id": "classify_intro",
+                    "type": "text",
+                    "content": "🎯 **QNN Classification**\n\nEnter your feature values as comma-separated numbers.\n\nExample: `0.5, 0.3, 0.7, 0.2`"
+                },
+                {
+                    "id": "classify_input",
+                    "type": "text input",
+                    "options": {
+                        "variableId": "features_input",
+                        "placeholder": "0.5, 0.3, 0.7, 0.2"
+                    }
+                },
+                {
+                    "id": "ask_model",
+                    "type": "text",
+                    "content": "Do you have a trained model ID? (Enter ID or 'no' for default)"
+                },
+                {
+                    "id": "model_input",
+                    "type": "text input",
+                    "options": {
+                        "variableId": "model_id",
+                        "placeholder": "qnn_abc123 or no"
+                    }
+                },
+                {
+                    "id": "do_classify",
+                    "type": "webhook",
+                    "options": {
+                        "url": "{{q3_endpoint}}/compute",
+                        "method": "POST",
+                        "headers": [
+                            {
+                                "key": "Authorization",
+                                "value": "{{q3_auth}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "type": "qnn_classify",
+                            "params": {
+                                "features": "{{features_input | split: ',' | map: 'trim' | map: 'to_number'}}",
+                                "model_id": "{{model_id}}",
+                                "num_classes": 2
+                            }
+                        },
+                        "responseVariableMapping": [
+                            {
+                                "bodyPath": "$.result",
+                                "variableId": "compute_result"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "id": "classify_result",
+                    "type": "text",
+                    "content": "✅ **Classification Result**\n\n**Predicted Class:** {{compute_result.predicted_class}}\n**Confidence:** {{compute_result.confidence | times: 100}}%\n**Qubits Used:** {{compute_result.qubits_used}}\n\n🔮 Probabilities:\n• Class 0: {{compute_result.probabilities.0 | times: 100}}%\n• Class 1: {{compute_result.probabilities.1 | times: 100}}%"
+                }
+            ]
+        },
+        {
+            "id": "train_flow",
+            "title": "Training",
+            "blocks": [
+                {
+                    "id": "train_intro",
+                    "type": "text",
+                    "content": "🎓 **QNN Training**\n\nI'll train a quantum neural network classifier.\n\nEnter your training data in JSON format:\n```\n[\n  {\"features\": [0.1, 0.2], \"label\": 0},\n  {\"features\": [0.8, 0.9], \"label\": 1}\n]\n```"
+                },
+                {
+                    "id": "train_data_input",
+                    "type": "text input",
+                    "options": {
+                        "variableId": "training_data",
+                        "isLong": true,
+                        "placeholder": "[{\"features\": [0.1, 0.2], \"label\": 0}, ...]"
+                    }
+                },
+                {
+                    "id": "train_confirm",
+                    "type": "text",
+                    "content": "Starting training with:\n• **Epochs:** 50\n• **Learning Rate:** 0.1\n• **Layers:** 3\n\nThis may take a moment..."
+                },
+                {
+                    "id": "do_train",
+                    "type": "webhook",
+                    "options": {
+                        "url": "{{q3_endpoint}}/compute",
+                        "method": "POST",
+                        "headers": [
+                            {
+                                "key": "Authorization",
+                                "value": "{{q3_auth}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "type": "qnn_train",
+                            "params": {
+                                "dataset": "{{training_data | parse_json}}",
+                                "epochs": 50,
+                                "learning_rate": 0.1,
+                                "layers": 3
+                            }
+                        },
+                        "responseVariableMapping": [
+                            {
+                                "bodyPath": "$.result",
+                                "variableId": "compute_result"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "id": "train_result",
+                    "type": "text",
+                    "content": "✅ **Training Complete!**\n\n📦 **Model ID:** `{{compute_result.model_id}}`\n\n📊 **Results:**\n• Final Accuracy: {{compute_result.final_accuracy | times: 100}}%\n• Final Loss: {{compute_result.final_loss}}\n• Parameters: {{compute_result.num_parameters}}\n• Qubits: {{compute_result.qubits_used}}\n\n💾 Save your Model ID to use for classification!"
+                }
+            ]
+        },
+        {
+            "id": "regression_flow",
+            "title": "Regression",
+            "blocks": [
+                {
+                    "id": "regress_intro",
+                    "type": "text",
+                    "content": "🔢 **QNN Regression**\n\nPredict continuous values using quantum regression.\n\nEnter feature values (comma-separated):"
+                },
+                {
+                    "id": "regress_input",
+                    "type": "text input",
+                    "options": {
+                        "variableId": "features_input",
+                        "placeholder": "0.5, 0.3, 0.7"
+                    }
+                },
+                {
+                    "id": "do_regress",
+                    "type": "webhook",
+                    "options": {
+                        "url": "{{q3_endpoint}}/compute",
+                        "method": "POST",
+                        "headers": [
+                            {
+                                "key": "Authorization",
+                                "value": "{{q3_auth}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "type": "qnn_regression",
+                            "params": {
+                                "features": "{{features_input | split: ',' | map: 'trim' | map: 'to_number'}}"
+                            }
+                        },
+                        "responseVariableMapping": [
+                            {
+                                "bodyPath": "$.result",
+                                "variableId": "compute_result"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "id": "regress_result",
+                    "type": "text",
+                    "content": "✅ **Regression Result**\n\n**Predicted Value:** {{compute_result.prediction}}\n**Uncertainty:** ±{{compute_result.uncertainty}}\n**Qubits Used:** {{compute_result.qubits_used}}\n**Layers:** {{compute_result.layers}}"
+                }
+            ]
+        },
+        {
+            "id": "kernel_flow",
+            "title": "Quantum Kernel",
+            "blocks": [
+                {
+                    "id": "kernel_intro",
+                    "type": "text",
+                    "content": "🧬 **Quantum Kernel**\n\nCompute kernel similarity between two data points for QSVM.\n\nEnter first data point (x1):"
+                },
+                {
+                    "id": "x1_input",
+                    "type": "text input",
+                    "options": {
+                        "variableId": "features_input",
+                        "placeholder": "0.5, 0.3"
+                    }
+                },
+                {
+                    "id": "ask_x2",
+                    "type": "text",
+                    "content": "Enter second data point (x2):"
+                },
+                {
+                    "id": "x2_input",
+                    "type": "text input",
+                    "options": {
+                        "variableId": "training_data",
+                        "placeholder": "0.6, 0.4"
+                    }
+                },
+                {
+                    "id": "do_kernel",
+                    "type": "webhook",
+                    "options": {
+                        "url": "{{q3_endpoint}}/compute",
+                        "method": "POST",
+                        "headers": [
+                            {
+                                "key": "Authorization",
+                                "value": "{{q3_auth}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "type": "quantum_kernel",
+                            "params": {
+                                "x1": "{{features_input | split: ',' | map: 'trim' | map: 'to_number'}}",
+                                "x2": "{{training_data | split: ',' | map: 'trim' | map: 'to_number'}}",
+                                "feature_map": "zz"
+                            }
+                        },
+                        "responseVariableMapping": [
+                            {
+                                "bodyPath": "$.result",
+                                "variableId": "compute_result"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "id": "kernel_result",
+                    "type": "text",
+                    "content": "✅ **Quantum Kernel Result**\n\n**Kernel Value:** {{compute_result.kernel_value}}\n**Normalized Overlap:** {{compute_result.normalized_overlap}}\n**Feature Map:** {{compute_result.feature_map}}\n**Qubits Used:** {{compute_result.qubits_used}}\n\n💡 Use this kernel value in your SVM implementation for quantum-enhanced classification."
+                }
+            ]
+        },
+        {
+            "id": "status_flow",
+            "title": "Capacity Status",
+            "blocks": [
+                {
+                    "id": "get_status",
+                    "type": "webhook",
+                    "options": {
+                        "url": "{{q3_endpoint}}/capacity",
+                        "method": "GET",
+                        "responseVariableMapping": [
+                            {
+                                "bodyPath": "$.capacity",
+                                "variableId": "compute_result"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "id": "status_result",
+                    "type": "text",
+                    "content": "📊 **Q3 Compute Status**\n\n🔮 **Qubits:** {{compute_result.total_qubits | number: 'comma'}}\n⚡ **Power:** {{compute_result.gw_equivalent}}\n📈 **Available:** {{compute_result.available_qubits | number: 'comma'}}\n🔢 **Gate Ops/sec:** {{compute_result.gate_ops_per_sec | number: 'comma'}}\n\n✅ System Online"
+                }
+            ]
+        },
+        {
+            "id": "continue_flow",
+            "title": "Continue",
+            "blocks": [
+                {
+                    "id": "continue_choice",
+                    "type": "choice input",
+                    "options": {
+                        "items": [
+                            {
+                                "id": "again",
+                                "content": "🔄 Do Another Task"
+                            },
+                            {
+                                "id": "done",
+                                "content": "👋 Done"
+                            }
+                        ]
+                    }
+                }
+            ]
+        }
+    ],
+    "edges": [
+        {
+            "id": "route_operation",
+            "from": "operation_choice",
+            "to": "condition_check"
+        },
+        {
+            "id": "to_classify",
+            "from": "condition_check",
+            "to": "classify_flow",
+            "condition": "{{operation_type}} == 'classify'"
+        },
+        {
+            "id": "to_train",
+            "from": "condition_check",
+            "to": "train_flow",
+            "condition": "{{operation_type}} == 'train'"
+        },
+        {
+            "id": "to_regress",
+            "from": "condition_check",
+            "to": "regression_flow",
+            "condition": "{{operation_type}} == 'regress'"
+        },
+        {
+            "id": "to_kernel",
+            "from": "condition_check",
+            "to": "kernel_flow",
+            "condition": "{{operation_type}} == 'kernel'"
+        },
+        {
+            "id": "to_status",
+            "from": "condition_check",
+            "to": "status_flow",
+            "condition": "{{operation_type}} == 'status'"
+        },
+        {
+            "id": "classify_done",
+            "from": "classify_result",
+            "to": "continue_flow"
+        },
+        {
+            "id": "train_done",
+            "from": "train_result",
+            "to": "continue_flow"
+        },
+        {
+            "id": "regress_done",
+            "from": "regress_result",
+            "to": "continue_flow"
+        },
+        {
+            "id": "kernel_done",
+            "from": "kernel_result",
+            "to": "continue_flow"
+        },
+        {
+            "id": "status_done",
+            "from": "status_result",
+            "to": "continue_flow"
+        },
+        {
+            "id": "loop_back",
+            "from": "continue_choice",
+            "to": "welcome",
+            "condition": "== 'again'"
+        }
+    ],
+    "settings": {
+        "general": {
+            "isBrandingEnabled": false,
+            "isInputPrefillEnabled": true
+        },
+        "typingEmulation": {
+            "enabled": true,
+            "speed": 300,
+            "maxDelay": 1500
+        }
+    }
+}

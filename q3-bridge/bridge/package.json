@@ -1,0 +1,15 @@
+{
+    "name": "q3-bridge-standalone",
+    "version": "1.0.0",
+    "description": "Standalone Q3 BIDC Bridge for WordPress environments",
+    "main": "q3-bridge.js",
+    "dependencies": {
+        "aws-sdk": "^2.1693.0",
+        "formidable": "^3.5.4",
+        "ws": "^8.19.0",
+        "fs-extra": "^11.2.0"
+    },
+    "engines": {
+        "node": ">=18.0.0"
+    }
+}

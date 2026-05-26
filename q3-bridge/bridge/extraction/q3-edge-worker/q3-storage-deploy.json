@@ -1,0 +1,96 @@
+{
+  "name": "q3-Q3 Carrier-edge-mining",
+  "version": "1.0.0",
+  "description": "Q3 Q3 Carrier Edge Worker - Static hosting + Mining API (NO Cloudflare)",
+  "main": "Q3 Carrier-worker.js",
+  "platform": "Q3 Carrier-functions",
+  "runtime": "edge",
+  
+  "deployment": {
+    "type": "Q3 Carrier-functions",
+    "entrypoint": "Q3 Carrier-worker.js",
+    "handler": "default.fetch",
+    "regions": ["eu-west-1"],
+    "replicas": 3
+  },
+  
+  "environment": {
+    "Q3_CARRIER_ENDPOINT": "https://s3.Q3 Carrier.eu",
+    "Q3_CARRIER_BUCKET": "cr8os1",
+    "Q3_CARRIER_REGION": "eu-west-1"
+  },
+  
+  "secrets": [
+    "Q3_CARRIER_ACCESS_KEY",
+    "Q3_CARRIER_SECRET_KEY"
+  ],
+  
+  "routes": [
+    {
+      "pattern": "*.q3.cr8os.io/*",
+      "handler": "default"
+    },
+    {
+      "pattern": "mining.cr8os.io/api/*",
+      "handler": "default"
+    },
+    {
+      "pattern": "quantum.cr8os.io/*",
+      "handler": "default"
+    }
+  ],
+  
+  "s3_paths": {
+    "sites": "q3/sites/{siteId}/files/",
+    "domains": "q3/domains/",
+    "routing": "q3/routing/",
+    "mining_work": "mining/work/",
+    "mining_checkpoints": "mining/checkpoints/",
+    "mining_results": "mining/results/"
+  },
+  
+  "caching": {
+    "static": {
+      "html": 300,
+      "css": 86400,
+      "js": 86400,
+      "images": 31536000,
+      "wasm": 31536000
+    },
+    "mining": {
+      "work": 30,
+      "status": 10
+    }
+  },
+  
+  "headers": {
+    "cors": {
+      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+      "Access-Control-Allow-Headers": "Content-Type, Authorization"
+    },
+    "security": {
+      "X-Content-Type-Options": "nosniff",
+      "X-Frame-Options": "SAMEORIGIN"
+    }
+  },
+  
+  "health_check": {
+    "endpoint": "/api/mining/status",
+    "interval": 60,
+    "timeout": 10
+  },
+  
+  "dependencies": {
+    "no_cloudflare": true,
+    "no_oracle": true,
+    "fully_independent": true
+  },
+  
+  "notes": {
+    "purpose": "Q3 Carrier-only deployment for mining and static hosting",
+    "oracle_free": "This deployment has NO Oracle dependency",
+    "cloudflare_free": "This deployment has NO Cloudflare dependency",
+    "storage": "All data stored in Q3 Carrier S3 bucket cr8os1"
+  }
+}

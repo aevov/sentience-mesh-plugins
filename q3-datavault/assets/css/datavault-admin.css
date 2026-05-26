@@ -1,0 +1,337 @@
+/**
+ * DataVault Admin Styles
+ */
+
+/* Base Styles */
+.datavault-wrap {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+.datavault-wrap h1 {
+    font-size: 28px;
+    margin-bottom: 20px;
+}
+
+.datavault-wrap h1 .version {
+    font-size: 14px;
+    color: #666;
+    font-weight: normal;
+}
+
+/* Hero Stats */
+.datavault-hero {
+    margin-bottom: 30px;
+}
+
+.hero-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 20px;
+}
+
+.stat-card {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 25px;
+    border-radius: 12px;
+    text-align: center;
+    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+}
+
+.stat-value {
+    font-size: 32px;
+    font-weight: bold;
+    margin-bottom: 5px;
+}
+
+.stat-label {
+    font-size: 14px;
+    opacity: 0.9;
+}
+
+/* Upload Section */
+.datavault-upload-section {
+    background: #fff;
+    border-radius: 12px;
+    padding: 30px;
+    margin-bottom: 30px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+}
+
+.datavault-upload-section h2 {
+    margin-top: 0;
+    margin-bottom: 20px;
+    font-size: 20px;
+}
+
+/* Drop Zone */
+.drop-zone {
+    border: 3px dashed #ccc;
+    border-radius: 12px;
+    padding: 60px 20px;
+    text-align: center;
+    transition: all 0.3s ease;
+    cursor: pointer;
+    background: #fafafa;
+}
+
+.drop-zone:hover,
+.drop-zone.dragover {
+    border-color: #667eea;
+    background: #f0f3ff;
+}
+
+.drop-zone-content .drop-icon {
+    font-size: 48px;
+    margin-bottom: 15px;
+}
+
+.drop-zone-content .drop-text {
+    font-size: 18px;
+    color: #333;
+    margin-bottom: 10px;
+}
+
+.drop-zone-content .drop-subtext {
+    color: #666;
+    margin: 15px 0;
+}
+
+.drop-buttons {
+    display: flex;
+    gap: 15px;
+    justify-content: center;
+    margin-top: 20px;
+}
+
+/* Upload Queue */
+.upload-queue {
+    margin-top: 25px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 20px;
+    background: #f9f9f9;
+}
+
+.queue-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+}
+
+.queue-header h3 {
+    margin: 0;
+    font-size: 16px;
+}
+
+.queue-list {
+    max-height: 300px;
+    overflow-y: auto;
+    margin-bottom: 15px;
+}
+
+.queue-item {
+    display: flex;
+    padding: 10px 15px;
+    background: white;
+    border-radius: 6px;
+    margin-bottom: 8px;
+    align-items: center;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+
+.queue-item .file-name {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.queue-item .file-size {
+    color: #666;
+    margin: 0 15px;
+}
+
+.queue-item .file-status {
+    width: 24px;
+}
+
+.queue-actions {
+    display: flex;
+    gap: 10px;
+}
+
+/* Progress */
+.upload-progress {
+    margin-top: 25px;
+}
+
+.progress-bar-container {
+    background: #e0e0e0;
+    border-radius: 20px;
+    height: 30px;
+    overflow: hidden;
+    margin-bottom: 10px;
+}
+
+.progress-bar {
+    height: 100%;
+    background: linear-gradient(90deg, #667eea, #764ba2);
+    border-radius: 20px;
+    transition: width 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: bold;
+    font-size: 14px;
+}
+
+.progress-status {
+    text-align: center;
+    color: #666;
+}
+
+/* Results */
+.upload-result {
+    margin-top: 20px;
+}
+
+.upload-result .result-success {
+    background: #d4edda;
+    color: #155724;
+    padding: 12px 15px;
+    border-radius: 6px;
+    margin-bottom: 8px;
+}
+
+.upload-result .result-error {
+    background: #f8d7da;
+    color: #721c24;
+    padding: 12px 15px;
+    border-radius: 6px;
+    margin-bottom: 8px;
+}
+
+/* Info Section */
+.datavault-info {
+    background: #fff;
+    border-radius: 12px;
+    padding: 30px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+}
+
+.datavault-info h2 {
+    margin-top: 0;
+}
+
+.info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 20px;
+}
+
+.info-card {
+    background: #f8f9fa;
+    padding: 20px;
+    border-radius: 8px;
+    border-left: 4px solid #667eea;
+}
+
+.info-card h4 {
+    margin: 0 0 10px 0;
+    color: #333;
+}
+
+.info-card p {
+    margin: 0;
+    color: #666;
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+/* Stats Page */
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 20px;
+    margin-bottom: 30px;
+}
+
+.stats-card {
+    background: #fff;
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+}
+
+.stats-card h3 {
+    margin: 0 0 15px 0;
+    font-size: 16px;
+    color: #333;
+}
+
+.stats-card table {
+    width: 100%;
+}
+
+.stats-card table th {
+    text-align: left;
+    padding: 8px 0;
+    color: #666;
+    font-weight: normal;
+}
+
+.stats-card table td {
+    text-align: right;
+    padding: 8px 0;
+    font-weight: bold;
+    color: #333;
+}
+
+.stats-tables {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+    gap: 20px;
+}
+
+.stats-table {
+    background: #fff;
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+}
+
+.stats-table h3 {
+    margin: 0 0 15px 0;
+}
+
+/* Tables */
+.datavault-wrap .wp-list-table td,
+.datavault-wrap .wp-list-table th {
+    vertical-align: middle;
+}
+
+/* Responsive */
+@media (max-width: 782px) {
+    .hero-stats {
+        grid-template-columns: 1fr 1fr;
+    }
+    
+    .stat-value {
+        font-size: 24px;
+    }
+    
+    .drop-buttons {
+        flex-direction: column;
+    }
+    
+    .info-grid,
+    .stats-grid,
+    .stats-tables {
+        grid-template-columns: 1fr;
+    }
+}

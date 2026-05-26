@@ -1,0 +1,41 @@
+name = "q3-edge-worker"
+main = "src/index.js"
+compatibility_date = "2024-01-01"
+
+# Account ID - get from Cloudflare dashboard
+ account_id = "d151157091ebbaaeb0da2232d3907578"
+
+# Development settings
+[dev]
+port = 8787
+local_protocol = "http"
+
+# Routes - map to your domains
+# Uncomment after adding domain to Cloudflare
+[[routes]]
+ pattern = "*.q3.convobuilder.com/*"
+ zone_name = "aevov.com"
+
+# Environment variables (secrets - set via wrangler secret put)
+# Required:
+#   wrangler secret put CUBBIT_ACCESS_KEY
+#   wrangler secret put CUBBIT_SECRET_KEY
+
+[vars]
+CUBBIT_ENDPOINT = "https://s3.cubbit.eu"
+CUBBIT_BUCKET = "cr8os1"
+CUBBIT_REGION = "eu-west-1"
+
+# Production environment
+[env.production]
+name = "q3-edge-worker-production"
+
+[env.production.vars]
+CUBBIT_ENDPOINT = "https://s3.cubbit.eu"
+CUBBIT_BUCKET = "cr8os1"
+CUBBIT_REGION = "eu-west-1"
+
+# KV Namespace for route caching (optional optimization)
+# [[kv_namespaces]]
+# binding = "Q3_ROUTES"
+# id = "your-kv-namespace-id"

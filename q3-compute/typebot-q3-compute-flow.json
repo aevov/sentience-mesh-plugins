@@ -1,0 +1,410 @@
+{
+    "version": "6",
+    "id": "q3-compute-flow",
+    "name": "Q3 Compute Bot",
+    "theme": {
+        "chat": {
+            "hostBubbles": {
+                "backgroundColor": "#667eea",
+                "color": "#ffffff"
+            },
+            "guestBubbles": {
+                "backgroundColor": "#f7f8ff",
+                "color": "#303235"
+            },
+            "buttons": {
+                "backgroundColor": "#764ba2",
+                "color": "#ffffff"
+            }
+        }
+    },
+    "variables": [
+        {
+            "id": "compute_endpoint",
+            "name": "Q3_COMPUTE_URL"
+        },
+        {
+            "id": "job_type",
+            "name": "job_type"
+        },
+        {
+            "id": "job_id",
+            "name": "job_id"
+        },
+        {
+            "id": "job_result",
+            "name": "job_result"
+        },
+        {
+            "id": "capacity_data",
+            "name": "capacity_data"
+        },
+        {
+            "id": "num_qubits",
+            "name": "num_qubits"
+        },
+        {
+            "id": "molecule",
+            "name": "molecule"
+        }
+    ],
+    "groups": [
+        {
+            "id": "welcome",
+            "title": "Welcome",
+            "blocks": [
+                {
+                    "id": "welcome_msg",
+                    "type": "text",
+                    "content": "⚛️ **Q3 Compute Engine**\\n\\nWelcome to the quantum compute interface.\\n\\n- 500,000 qubit pool\\n- 0.5 GW equivalent compute\\n- 5 operation types available"
+                },
+                {
+                    "id": "main_choice",
+                    "type": "choice input",
+                    "items": [
+                        {
+                            "id": "c1",
+                            "content": "🔮 Check Capacity"
+                        },
+                        {
+                            "id": "c2",
+                            "content": "🎲 Generate Random Numbers"
+                        },
+                        {
+                            "id": "c3",
+                            "content": "🔍 Grover Search Demo"
+                        },
+                        {
+                            "id": "c4",
+                            "content": "⚗️ VQE Chemistry"
+                        },
+                        {
+                            "id": "c5",
+                            "content": "📋 List Operations"
+                        }
+                    ]
+                }
+            ],
+            "edges": [
+                {
+                    "id": "e1",
+                    "from": "main_choice",
+                    "to": "capacity_check",
+                    "condition": "{{choice}} == '🔮 Check Capacity'"
+                },
+                {
+                    "id": "e2",
+                    "from": "main_choice",
+                    "to": "random_flow",
+                    "condition": "{{choice}} == '🎲 Generate Random Numbers'"
+                },
+                {
+                    "id": "e3",
+                    "from": "main_choice",
+                    "to": "grover_flow",
+                    "condition": "{{choice}} == '🔍 Grover Search Demo'"
+                },
+                {
+                    "id": "e4",
+                    "from": "main_choice",
+                    "to": "vqe_flow",
+                    "condition": "{{choice}} == '⚗️ VQE Chemistry'"
+                },
+                {
+                    "id": "e5",
+                    "from": "main_choice",
+                    "to": "operations_list",
+                    "condition": "{{choice}} == '📋 List Operations'"
+                }
+            ]
+        },
+        {
+            "id": "capacity_check",
+            "title": "Check Capacity",
+            "blocks": [
+                {
+                    "id": "capacity_webhook",
+                    "type": "webhook",
+                    "url": "{{Q3_COMPUTE_URL}}/capacity",
+                    "method": "GET",
+                    "responseMapping": [
+                        {
+                            "variable": "capacity_data",
+                            "path": "$.capacity"
+                        }
+                    ]
+                },
+                {
+                    "id": "capacity_display",
+                    "type": "text",
+                    "content": "📊 **Compute Capacity**\\n\\n🔮 Total Qubits: **{{capacity_data.total_qubits}}**\\n✅ Available: **{{capacity_data.available_qubits}}**\\n⚡ Power: **{{capacity_data.gw_equivalent}}**\\n📈 Active Jobs: **{{capacity_data.active_jobs}}**"
+                },
+                {
+                    "id": "back_from_capacity",
+                    "type": "choice input",
+                    "items": [
+                        {
+                            "id": "back1",
+                            "content": "⬅️ Back to Menu"
+                        }
+                    ]
+                }
+            ],
+            "edges": [
+                {
+                    "id": "e_cap_back",
+                    "from": "back_from_capacity",
+                    "to": "welcome"
+                }
+            ]
+        },
+        {
+            "id": "random_flow",
+            "title": "Random Numbers",
+            "blocks": [
+                {
+                    "id": "ask_qubits",
+                    "type": "text",
+                    "content": "🎲 **Quantum Random Number Generator**\\n\\nHow many qubits to use? (10-100)"
+                },
+                {
+                    "id": "input_qubits",
+                    "type": "number input",
+                    "variable": "num_qubits",
+                    "placeholder": "Enter number (10-100)"
+                },
+                {
+                    "id": "random_compute",
+                    "type": "webhook",
+                    "url": "{{Q3_COMPUTE_URL}}/compute",
+                    "method": "POST",
+                    "headers": {
+                        "Content-Type": "application/json"
+                    },
+                    "body": {
+                        "type": "random_circuit",
+                        "params": {
+                            "num_qubits": "{{num_qubits}}",
+                            "depth": 20,
+                            "shots": 1000
+                        }
+                    },
+                    "responseMapping": [
+                        {
+                            "variable": "job_result",
+                            "path": "$.result"
+                        }
+                    ]
+                },
+                {
+                    "id": "random_result",
+                    "type": "text",
+                    "content": "✅ **Quantum Random Generated!**\\n\\n🔢 Qubits: {{job_result.qubits_used}}\\n📐 Depth: {{job_result.depth}}\\n🎯 Shots: {{job_result.shots}}\\n🔐 Entropy Bits: {{job_result.entropy_bits}}\\n\\n⚙️ Gate Operations: {{job_result.gate_ops}}"
+                },
+                {
+                    "id": "back_from_random",
+                    "type": "choice input",
+                    "items": [
+                        {
+                            "id": "back2",
+                            "content": "⬅️ Back to Menu"
+                        }
+                    ]
+                }
+            ],
+            "edges": [
+                {
+                    "id": "e_rand_back",
+                    "from": "back_from_random",
+                    "to": "welcome"
+                }
+            ]
+        },
+        {
+            "id": "grover_flow",
+            "title": "Grover Search",
+            "blocks": [
+                {
+                    "id": "grover_intro",
+                    "type": "text",
+                    "content": "🔍 **Grover's Search Algorithm**\\n\\nDemonstrating quadratic speedup!\\n\\nSearching a database of 1,000,000 items..."
+                },
+                {
+                    "id": "grover_compute",
+                    "type": "webhook",
+                    "url": "{{Q3_COMPUTE_URL}}/compute",
+                    "method": "POST",
+                    "headers": {
+                        "Content-Type": "application/json"
+                    },
+                    "body": {
+                        "type": "grover_search",
+                        "params": {
+                            "database_size": 1000000,
+                            "target_pattern": "0xABCD"
+                        }
+                    },
+                    "responseMapping": [
+                        {
+                            "variable": "job_result",
+                            "path": "$.result"
+                        }
+                    ]
+                },
+                {
+                    "id": "grover_result",
+                    "type": "text",
+                    "content": "✅ **Grover Search Complete!**\\n\\n🔮 Qubits Used: {{job_result.qubits_used}}\\n🔄 Iterations: {{job_result.iterations}}\\n📍 Found Index: {{job_result.found_index}}\\n⚡ Speedup: **{{job_result.speedup}}x**\\n\\n_Classical would need 1,000,000 operations. Grover needs only ~1,000!_"
+                },
+                {
+                    "id": "back_from_grover",
+                    "type": "choice input",
+                    "items": [
+                        {
+                            "id": "back3",
+                            "content": "⬅️ Back to Menu"
+                        }
+                    ]
+                }
+            ],
+            "edges": [
+                {
+                    "id": "e_grov_back",
+                    "from": "back_from_grover",
+                    "to": "welcome"
+                }
+            ]
+        },
+        {
+            "id": "vqe_flow",
+            "title": "VQE Chemistry",
+            "blocks": [
+                {
+                    "id": "vqe_intro",
+                    "type": "text",
+                    "content": "⚗️ **VQE Quantum Chemistry**\\n\\nCalculate molecular ground state energy.\\n\\nSelect a molecule:"
+                },
+                {
+                    "id": "molecule_choice",
+                    "type": "choice input",
+                    "variable": "molecule",
+                    "items": [
+                        {
+                            "id": "m1",
+                            "content": "H₂ (Hydrogen)"
+                        },
+                        {
+                            "id": "m2",
+                            "content": "LiH (Lithium Hydride)"
+                        },
+                        {
+                            "id": "m3",
+                            "content": "H₂O (Water)"
+                        }
+                    ]
+                },
+                {
+                    "id": "vqe_compute",
+                    "type": "webhook",
+                    "url": "{{Q3_COMPUTE_URL}}/submit",
+                    "method": "POST",
+                    "headers": {
+                        "Content-Type": "application/json"
+                    },
+                    "body": {
+                        "type": "vqe_chemistry",
+                        "params": {
+                            "molecule": "{{molecule}}",
+                            "basis": "sto-3g"
+                        }
+                    },
+                    "responseMapping": [
+                        {
+                            "variable": "job_id",
+                            "path": "$.job_id"
+                        }
+                    ]
+                },
+                {
+                    "id": "vqe_waiting",
+                    "type": "text",
+                    "content": "⏳ Computing... Job ID: {{job_id}}\\n\\n_VQE calculations take longer. Fetching result..._"
+                },
+                {
+                    "id": "vqe_result_fetch",
+                    "type": "webhook",
+                    "url": "{{Q3_COMPUTE_URL}}/result/{{job_id}}",
+                    "method": "GET",
+                    "responseMapping": [
+                        {
+                            "variable": "job_result",
+                            "path": "$.result"
+                        }
+                    ]
+                },
+                {
+                    "id": "vqe_result",
+                    "type": "text",
+                    "content": "✅ **VQE Complete!**\\n\\n🧪 Molecule: {{job_result.molecule}}\\n🔮 Qubits: {{job_result.qubits_used}}\\n⚡ Ground State Energy: **{{job_result.ground_state_energy}} {{job_result.unit}}**\\n🔄 Iterations: {{job_result.iterations}}\\n✓ Converged: {{job_result.converged}}"
+                },
+                {
+                    "id": "back_from_vqe",
+                    "type": "choice input",
+                    "items": [
+                        {
+                            "id": "back4",
+                            "content": "⬅️ Back to Menu"
+                        }
+                    ]
+                }
+            ],
+            "edges": [
+                {
+                    "id": "e_vqe_back",
+                    "from": "back_from_vqe",
+                    "to": "welcome"
+                }
+            ]
+        },
+        {
+            "id": "operations_list",
+            "title": "Operations List",
+            "blocks": [
+                {
+                    "id": "ops_fetch",
+                    "type": "webhook",
+                    "url": "{{Q3_COMPUTE_URL}}/operations",
+                    "method": "GET"
+                },
+                {
+                    "id": "ops_display",
+                    "type": "text",
+                    "content": "📋 **Available Operations**\\n\\n🔐 **SHA256d** - Bitcoin-style hashing (32 qubits)\\n🔍 **Grover Search** - Pattern matching (20-50 qubits)\\n📊 **QAOA Optimize** - Combinatorial optimization (10-30 qubits)\\n🎲 **Random Circuit** - Quantum random numbers (10-100 qubits)\\n⚗️ **VQE Chemistry** - Molecular simulation (8-20 qubits)"
+                },
+                {
+                    "id": "back_from_ops",
+                    "type": "choice input",
+                    "items": [
+                        {
+                            "id": "back5",
+                            "content": "⬅️ Back to Menu"
+                        }
+                    ]
+                }
+            ],
+            "edges": [
+                {
+                    "id": "e_ops_back",
+                    "from": "back_from_ops",
+                    "to": "welcome"
+                }
+            ]
+        }
+    ],
+    "settings": {
+        "general": {
+            "brandName": "Q3 Compute",
+            "isBrandingEnabled": false
+        }
+    }
+}

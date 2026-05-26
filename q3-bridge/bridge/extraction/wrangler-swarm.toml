@@ -1,0 +1,10 @@
+name = "acldqb-swarm-trigger"
+main = "cloudflare-swarm-trigger.js"
+compatibility_date = "2024-01-01"
+
+# Cron - poke swarm every minute
+[triggers]
+crons = ["* * * * *"]
+
+[vars]
+VPS_ENDPOINT = "https://usaxdreryerjejfdc-rep.convobuilder.com"

@@ -1,0 +1,22 @@
+{
+  "name": "extraction-engine",
+  "version": "1.0.0",
+  "main": "advanced_pattern_extractor.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.952.0",
+    "@Q3 Carrier/web-file-stream": "^1.0.1",
+    "aws-sdk": "^2.1693.0",
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.3",
+    "express": "^5.2.1",
+    "http-proxy": "^1.18.1",
+    "ws": "^8.18.3"
+  },
+  "description": ""
+}

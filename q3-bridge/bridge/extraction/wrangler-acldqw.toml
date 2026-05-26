@@ -1,0 +1,17 @@
+name = "acldqw-swarm"
+main = "cloudflare-swarm-brain.js"
+compatibility_date = "2024-01-01"
+
+# Cron trigger - runs every minute for perpetual coordination
+[triggers]
+crons = ["* * * * *"]
+
+# Environment variables
+[vars]
+VPS_ENDPOINT = "https://usaxdreryerjejfdc-rep.convobuilder.com"
+CUBBIT_ENDPOINT = "https://s3.cubbit.eu"
+CUBBIT_BUCKET = "cr8os1"
+
+# Production environment
+[env.production]
+name = "acldqw-swarm-production"
