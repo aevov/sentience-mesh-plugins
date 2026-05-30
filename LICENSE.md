@@ -17,7 +17,8 @@ Applies to:
 - Capacity aggregation logic
 - BIDC codec implementation
 - Sentience mesh authentication and telemetry
-- Anyonic braid and sentience physics core algorithms 
+- Anyonic braid and sentience physics core algorithms
+- QVPN Logic
 
 ---
 
